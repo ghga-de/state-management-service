@@ -1,57 +1,36 @@
-# Microservice Repository Template
+[![tests](https://github.com/ghga-de/state-management-service/actions/workflows/tests.yaml/badge.svg)](https://github.com/ghga-de/state-management-service/actions/workflows/tests.yaml)
+[![Coverage Status](https://coveralls.io/repos/github/ghga-de/state-management-service/badge.svg?branch=main)](https://coveralls.io/github/ghga-de/state-management-service?branch=main)
 
-This is a template for GitHub repositories containing one Python-based microservice (optimal for a multirepository setup).
+# State Management Service
 
-It features:
-
-- *Continuous Templation* - A continuous update-delivery mechanism for templated repositories
-- A [devcontainer](https://containers.dev/)-based fully-configured development environment for vscode
-- Tight linting and formatting using [Ruff](https://docs.astral.sh/ruff/)
-- Static type checking using [mypy](https://www.mypy-lang.org/)
-- Security scanning using [bandit](https://bandit.readthedocs.io/en/latest/)
-- A structure for automated tests using [pytest](https://docs.pytest.org/en/7.4.x/)
-- Dependency locking using [pip-tools](https://github.com/jazzband/pip-tools)
-- Git hooks checking linting and formatting before committing using [pre-commit](https://pre-commit.com/)
-- Automatic container-building and publishing to [Docker Hub](https://hub.docker.com/)
-- GitHub Actions for automating or checking all of the above
-
-It is worth emphasizing the first point, this template is not just a one-time kickstart for your project
-but repositories created using this template will continue receiving updates as the template evolves.
-For further details, please look at the explanation in [.template/README.md](/.template/README.md).
-
-Please also refer to [.readme_generation/README.md](/.readme_generation/README.md) for details on how
-to adapt this readme.
-
-Here the intro to the template stops and the actual template for the readme of the microservice starts:
-
----
-[![tests](https://github.com/ghga-de/microservice-repository-template/actions/workflows/tests.yaml/badge.svg)](https://github.com/ghga-de/microservice-repository-template/actions/workflows/tests.yaml)
-[![Coverage Status](https://coveralls.io/repos/github/ghga-de/microservice-repository-template/badge.svg?branch=main)](https://coveralls.io/github/ghga-de/microservice-repository-template?branch=main)
-
-# My Microservice
-
-My-Microservice - a short description
+State Management Service - Provides a REST API for basic infrastructure technology state management.
 
 ## Description
 
-<!-- Please provide a short overview of the features of this service. -->
+This service is intended to aid testing of the GHGA Archive by providing a unified
+API for managing state in infrastructure technologies such as MongoDB, S3, Apache Kafka,
+and the Hashicorp Vault.
 
-Here you should provide a short summary of the purpose of this microservice.
+This service should **never** be deployed to production. It is *only* intended for use
+in the Testing and Staging environments, where there is no access to real data.
+Despite this, there should be a way to restrict which databases and collections can be
+accessed with this service through configuration, and a simple API key (set in config)
+that can be used to authenticate requests.
 
 
 ## Installation
 
 We recommend using the provided Docker container.
 
-A pre-build version is available at [docker hub](https://hub.docker.com/repository/docker/ghga/my-microservice):
+A pre-build version is available at [docker hub](https://hub.docker.com/repository/docker/ghga/state-management-service):
 ```bash
-docker pull ghga/my-microservice:0.1.0
+docker pull ghga/state-management-service:0.1.0
 ```
 
 Or you can build the container yourself from the [`./Dockerfile`](./Dockerfile):
 ```bash
 # Execute in the repo's root dir:
-docker build -t ghga/my-microservice:0.1.0 .
+docker build -t ghga/state-management-service:0.1.0 .
 ```
 
 For production-ready deployment, we recommend using Kubernetes, however,
@@ -59,7 +38,7 @@ for simple use cases, you could execute the service using docker
 on a single server:
 ```bash
 # The entrypoint is preconfigured:
-docker run -p 8080:8080 ghga/my-microservice:0.1.0 --help
+docker run -p 8080:8080 ghga/state-management-service:0.1.0 --help
 ```
 
 If you prefer not to use containers, you may install the service from source:
@@ -68,7 +47,7 @@ If you prefer not to use containers, you may install the service from source:
 pip install .
 
 # To run the service:
-my_microservice --help
+sms --help
 ```
 
 ## Configuration
@@ -225,9 +204,9 @@ The service requires the following configuration parameters:
 
 A template YAML for configurating the service can be found at
 [`./example-config.yaml`](./example-config.yaml).
-Please adapt it, rename it to `.my_microservice.yaml`, and place it into one of the following locations:
-- in the current working directory were you are execute the service (on unix: `./.my_microservice.yaml`)
-- in your home directory (on unix: `~/.my_microservice.yaml`)
+Please adapt it, rename it to `.sms.yaml`, and place it into one of the following locations:
+- in the current working directory were you are execute the service (on unix: `./.sms.yaml`)
+- in your home directory (on unix: `~/.sms.yaml`)
 
 The config yaml will be automatically parsed by the service.
 
@@ -236,8 +215,8 @@ The config yaml will be automatically parsed by the service.
 All parameters mentioned in the [`./example-config.yaml`](./example-config.yaml)
 could also be set using environment variables or file secrets.
 
-For naming the environment variables, just prefix the parameter name with `my_microservice_`,
-e.g. for the `host` set an environment variable named `my_microservice_host`
+For naming the environment variables, just prefix the parameter name with `sms_`,
+e.g. for the `host` set an environment variable named `sms_host`
 (you may use both upper or lower cases, however, it is standard to define all env
 variables in upper cases).
 
@@ -249,13 +228,22 @@ of the pydantic documentation.
 An OpenAPI specification for this service can be found [here](./openapi.yaml).
 
 ## Architecture and Design:
-<!-- Please provide an overview of the architecture and design of the code base.
-Mention anything that deviates from the standard triple hexagonal architecture and
-the corresponding structure. -->
+API calls to the State Management Service are authenticated through a configured API Key.
 
-This is a Python-based service following the Triple Hexagonal Architecture pattern.
-It uses protocol/provider pairs and dependency injection mechanisms provided by the
-[hexkit](https://github.com/ghga-de/hexkit) library.
+For each technology, REST API endpoints will be exposed, prefixed as follows:
+
+| **Technology Name** | **Prefix**  |
+|---------------------|-------------|
+| MongoDB             | `/docs/`    |
+| Apache Kafka        | `/events/`  |
+| S3                  | `/objects/` |
+| Vault               | `/secrets/` |
+
+Branch isolation is achieved in shared state technologies by the use of prefixes in,
+for example, database names.
+The `db_prefix` and `topic_prefix` config values are used so the prefixes must only be
+specified once. They are applied to database and topic names automatically throughout
+the SMS instance.
 
 
 ## Development
