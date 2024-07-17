@@ -55,9 +55,74 @@ sms --help
 ### Parameters
 
 The service requires the following configuration parameters:
+- **`token_hashes`** *(array)*: List of token hashes corresponding to the tokens that can be used to authenticate calls to this service. Hashes are made with SHA-256.
+
+  - **Items** *(string)*
+
+
+  Examples:
+
+  ```json
+  "7ad83b6b9183c91674eec897935bc154ba9ff9704f8be0840e77f476b5062b6e"
+  ```
+
+
+- **`db_prefix`** *(string)*: Prefix to add to all database names used in the SMS.
+
+
+  Examples:
+
+  ```json
+  "testing-branch-name-"
+  ```
+
+
+- **`db_permissions`**: List of permissions that can be granted on a collection. Use * to signify 'all'. The format is '<db_name>.<collection_name>.<permissions>', e.g. 'db1.collection1.crud'. The permissions are 'c' for create, 'r' for read, 'u' for update, and 'd' for delete. If db_permissions is None, no operations are allowed on any database or collection. Default: `null`.
+
+  - **Any of**
+
+    - *array*
+
+      - **Items** *(string)*
+
+    - *null*
+
+
+  Examples:
+
+  ```json
+  "db1.collection1.crud"
+  ```
+
+
+  ```json
+  "db2.*.r"
+  ```
+
+
+  ```json
+  "db3.*.*"
+  ```
+
+
+  ```json
+  "*.*.*"
+  ```
+
+
+- **`db_connection_str`** *(string, format: password)*: MongoDB connection string. Might include credentials. For more information see: https://naiveskill.com/mongodb-connection-string/.
+
+
+  Examples:
+
+  ```json
+  "mongodb://localhost:27017"
+  ```
+
+
 - **`log_level`** *(string)*: The minimum log level to capture. Must be one of: `["CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG", "TRACE"]`. Default: `"INFO"`.
 
-- **`service_name`** *(string)*: Short name of this service. Default: `"my_microservice"`.
+- **`service_name`** *(string)*: Short name of this service. Default: `"sms"`.
 
 - **`service_instance_id`** *(string)*: A string that uniquely identifies this instance across all instances of this service. This is included in log messages.
 
@@ -196,8 +261,6 @@ The service requires the following configuration parameters:
   false
   ```
 
-
-- **`language`** *(string)*: The language. Must be one of: `["Greek", "Croatian", "French", "German"]`. Default: `"Croatian"`.
 
 
 ### Usage:
