@@ -15,3 +15,24 @@
 #
 
 """Used to define the location of the main FastAPI app object."""
+
+from typing import Any
+
+from fastapi import FastAPI
+
+from sms.api.configure import get_openapi_schema
+from sms.api.routes import router
+
+app = FastAPI()
+app.include_router(router)
+
+
+def custom_openapi() -> dict[str, Any]:
+    if app.openapi_schema:
+        return app.openapi_schema
+    openapi_schema = get_openapi_schema(app)
+    app.openapi_schema = openapi_schema
+    return openapi_schema
+
+
+app.openapi = custom_openapi  # type: ignore [method-assign]
