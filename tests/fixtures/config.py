@@ -16,8 +16,9 @@
 """Test config"""
 
 from pathlib import Path
+from typing import Any
 
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, YamlConfigSettingsSource
 
 from sms.config import Config
 from tests.fixtures.utils import BASE_DIR
@@ -32,10 +33,11 @@ def get_config(
     """Merges parameters from the default TEST_CONFIG_YAML with params inferred
     from testcontainers.
     """
-    sources_dict: dict[str, object] = {}
+    test_config = YamlConfigSettingsSource(Config, default_config_yaml, "utf-8")
+    sources_dict: dict[str, Any] = test_config.yaml_data
 
     if sources is not None:
         for source in sources:
             sources_dict.update(**source.model_dump())
 
-    return Config(config_yaml=default_config_yaml, **sources_dict)
+    return Config(**sources_dict)
