@@ -18,7 +18,7 @@
 from ghga_service_commons.api import ApiConfigBase
 from hexkit.config import config_from_yaml
 from hexkit.log import LoggingConfig
-from pydantic import Field, SecretStr
+from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings
 
 SERVICE_NAME: str = "sms"
@@ -43,11 +43,20 @@ class SmsConfig(BaseSettings):
         description=(
             "List of permissions that can be granted on a collection. Use * to signify"
             + " 'all'. The format is '<db_name>.<collection_name>.<permissions>', e.g."
-            + " 'db1.collection1.crud'. The permissions are 'c' for create, 'r' for read,"
-            + " 'u' for update, and 'd' for delete. If db_permissions is None, no"
+            + " 'db1.collection1.crud'. The permissions are 'r' for read and 'w' for"
+            + " write. Deletion is a write operation. If db_permissions are not set, no"
             + " operations are allowed on any database or collection."
         ),
-        examples=["db1.collection1.crud", "db2.*.r", "db3.*.*", "*.*.*"],
+        examples=[
+            "db1.coll1.r",
+            "db1.coll1.w",
+            "db1.coll1.rw",
+            "db1.coll1.*",
+            "db2.*.r",
+            "db3.*.*",
+            "*.*.r",
+            "*.*.*",
+        ],
     )
     db_connection_str: SecretStr = Field(
         default=...,
@@ -58,6 +67,27 @@ class SmsConfig(BaseSettings):
             + " https://naiveskill.com/mongodb-connection-string/"
         ),
     )
+
+    @field_validator("db_permissions")
+    @classmethod
+    def validate_permissions(cls, value):
+        """Validate the permissions to make sure only 'r', 'w', 'rw', and '*' are used."""
+        if value is None:
+            return value
+        for perm in value:
+            parts = perm.split(".")
+            if len(parts) != 3:
+                raise ValueError(
+                    f"Invalid permission '{perm}'."
+                    + " Must have exactly two periods ('.') in it."
+                )
+            ops = parts[2]
+            if ops not in ("r", "w", "rw", "*"):
+                raise ValueError(
+                    f"Invalid permission '{ops}' in '{perm}'."
+                    + " Only 'r', 'w', 'rw', and '*' are allowed."
+                )
+        return value
 
 
 @config_from_yaml(prefix=SERVICE_NAME)

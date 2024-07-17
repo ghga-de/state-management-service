@@ -38,7 +38,10 @@ def get_config(
 
     if sources is not None:
         for source in sources:
-            sources_dict.update(**source.model_dump())
+            # Only update with keys that are already in the test config yaml
+            source_dump = source.model_dump()
+            config_to_add = {k: v for k, v in source_dump.items() if k in sources_dict}
+            sources_dict.update(**config_to_add)
 
     return Config(**sources_dict)
 

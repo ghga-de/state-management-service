@@ -77,7 +77,7 @@ The service requires the following configuration parameters:
   ```
 
 
-- **`db_permissions`**: List of permissions that can be granted on a collection. Use * to signify 'all'. The format is '<db_name>.<collection_name>.<permissions>', e.g. 'db1.collection1.crud'. The permissions are 'c' for create, 'r' for read, 'u' for update, and 'd' for delete. If db_permissions is None, no operations are allowed on any database or collection. Default: `null`.
+- **`db_permissions`**: List of permissions that can be granted on a collection. Use * to signify 'all'. The format is '<db_name>.<collection_name>.<permissions>', e.g. 'db1.collection1.crud'. The permissions are 'r' for read and 'w' for write. Deletion is a write operation. If db_permissions are not set, no operations are allowed on any database or collection. Default: `null`.
 
   - **Any of**
 
@@ -91,7 +91,22 @@ The service requires the following configuration parameters:
   Examples:
 
   ```json
-  "db1.collection1.crud"
+  "db1.coll1.r"
+  ```
+
+
+  ```json
+  "db1.coll1.w"
+  ```
+
+
+  ```json
+  "db1.coll1.rw"
+  ```
+
+
+  ```json
+  "db1.coll1.*"
   ```
 
 
@@ -102,6 +117,11 @@ The service requires the following configuration parameters:
 
   ```json
   "db3.*.*"
+  ```
+
+
+  ```json
+  "*.*.r"
   ```
 
 
@@ -154,6 +174,8 @@ The service requires the following configuration parameters:
   "%(asctime)s - Severity: %(levelno)s - %(msg)s"
   ```
 
+
+- **`log_traceback`** *(boolean)*: Whether to include exception tracebacks in log messages. Default: `true`.
 
 - **`host`** *(string)*: IP of the host. Default: `"127.0.0.1"`.
 
