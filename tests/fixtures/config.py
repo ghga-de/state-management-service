@@ -33,7 +33,7 @@ def get_config(
     """Merges parameters from the default TEST_CONFIG_YAML with params inferred
     from testcontainers.
     """
-    test_config = YamlConfigSettingsSource(Config, default_config_yaml, "utf-8")
+    test_config = YamlConfigSettingsSource(BaseSettings, default_config_yaml, "utf-8")
     sources_dict: dict[str, Any] = test_config.yaml_data
 
     if sources is not None:
@@ -41,3 +41,6 @@ def get_config(
             sources_dict.update(**source.model_dump())
 
     return Config(**sources_dict)
+
+
+DEFAULT_TEST_CONFIG = get_config()

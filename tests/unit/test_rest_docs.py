@@ -26,7 +26,7 @@ from ghga_service_commons.api.testing import AsyncTestClient
 from sms.config import Config
 from sms.inject import prepare_rest_app
 from sms.ports.outbound.docs import DocsDaoPort
-from tests.fixtures.config import get_config
+from tests.fixtures.config import DEFAULT_TEST_CONFIG
 
 pytestmark = pytest.mark.asyncio()
 VALID_BEARER_TOKEN = "Bearer 43fadc91-b98f-4925-bd31-1b054b13dc55"
@@ -97,8 +97,7 @@ async def get_rest_client(config: Config, docs_dao_override: DocsDaoPort):
 
 async def test_health_check():
     """Test the health check endpoint."""
-    config = get_config()
-    async with get_rest_client(config, DummyDocsDao()) as client:
+    async with get_rest_client(DEFAULT_TEST_CONFIG, DummyDocsDao()) as client:
         response = await client.get("/health")
         assert response.status_code == 200
         assert response.json() == {"status": "OK"}
@@ -116,9 +115,8 @@ async def test_health_check():
 )
 async def test_unauthenticated_calls(http_method: str, headers: dict[str, str]):
     """Test unauthenticated calls, which should result in a 401 Unauthorized code."""
-    config = get_config()
     dummy_docs_dao = DummyDocsDao()
-    async with get_rest_client(config, dummy_docs_dao) as client:
+    async with get_rest_client(DEFAULT_TEST_CONFIG, dummy_docs_dao) as client:
         method_to_call = getattr(client, http_method)
         response = await method_to_call("/docs/testdb/testcollection", headers=headers)
 
@@ -138,9 +136,8 @@ async def test_unauthenticated_calls(http_method: str, headers: dict[str, str]):
 )
 async def test_authenticated_valid_calls(http_method: str, expected_status_code: int):
     """Verify authenticated calls are successfully passed to the DAO."""
-    config = get_config()
     dummy_docs_dao = DummyDocsDao()
-    async with get_rest_client(config, dummy_docs_dao) as client:
+    async with get_rest_client(DEFAULT_TEST_CONFIG, dummy_docs_dao) as client:
         method_to_call = getattr(client, http_method)
 
         put_args: dict[str, Any] = {"json": {}} if http_method == "put" else {}
@@ -186,9 +183,8 @@ async def test_calls_with_query_params(
     as_dict: Mapping[str, str],
 ):
     """Verify calls with query parameters (GET and DELETE)."""
-    config = get_config()
     dummy_docs_dao = DummyDocsDao()
-    async with get_rest_client(config, dummy_docs_dao) as client:
+    async with get_rest_client(DEFAULT_TEST_CONFIG, dummy_docs_dao) as client:
         method_to_call = getattr(client, http_method)
         response = await method_to_call(
             url=f"/docs/testdb/testcollection?{query_string}",
@@ -215,9 +211,8 @@ async def test_permission_errors(
     http_method: str,
 ):
     """Test that permission errors are handled correctly."""
-    config = get_config()
     dummy_docs_dao = DummyDocsDao()
-    async with get_rest_client(config, dummy_docs_dao) as client:
+    async with get_rest_client(DEFAULT_TEST_CONFIG, dummy_docs_dao) as client:
         method_to_call = getattr(client, http_method)
         put_args: dict[str, Any] = {"json": {}} if http_method == "put" else {}
         response = await method_to_call(
@@ -233,10 +228,9 @@ async def test_permission_errors(
 
 async def test_put_with_docs():
     """Test PUT with documents."""
-    config = get_config()
     dummy_docs_dao = DummyDocsDao()
     docs_to_insert: list[Mapping[str, Any]] = [{"name": "Alice"}, {"name": "Bob"}]
-    async with get_rest_client(config, dummy_docs_dao) as client:
+    async with get_rest_client(DEFAULT_TEST_CONFIG, dummy_docs_dao) as client:
         response = await client.put(
             url="/docs/testdb/testcollection",
             headers={"Authorization": VALID_BEARER_TOKEN},

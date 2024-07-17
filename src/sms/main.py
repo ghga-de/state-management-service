@@ -15,7 +15,17 @@
 
 """REST API configuration entrypoint module."""
 
+from ghga_service_commons.api import run_server
+from hexkit.log import configure_logging
 
-async def run_rest():
-    """Run the REST API"""
-    pass
+from sms.config import Config
+from sms.inject import prepare_rest_app
+
+
+async def run_rest_app():
+    """Run the REST HTTP API"""
+    config = Config()  # type: ignore
+    configure_logging(config=config)
+
+    async with prepare_rest_app(config=config) as app:
+        await run_server(app=app, config=config)

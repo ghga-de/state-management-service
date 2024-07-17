@@ -67,6 +67,3 @@ class Config(ApiConfigBase, LoggingConfig, SmsConfig):
     service_name: str = Field(
         default=SERVICE_NAME, description="Short name of this service"
     )
-
-
-CONFIG = Config()  # type: ignore

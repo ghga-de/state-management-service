@@ -15,11 +15,14 @@
 
 """Entrypoint of the package."""
 
-from .config import CONFIG, Config
+import asyncio
+
+from sms.main import run_rest_app
 
 
-def run(config: Config = CONFIG):
+def run():
     """Run the service."""
+    asyncio.run(run_rest_app())
 
 
 if __name__ == "__main__":
