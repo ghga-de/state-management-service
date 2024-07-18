@@ -5,4 +5,7 @@ token_hashes:
 db_connection_str: mongodb://localhost:27017
 db_prefix: "test_"
 db_permissions:
-- "*.*.*"
+- "testdb.readonly.r"
+- "testdb.writeonly.w"
+- "testdb.readwrite.rw"
+- "testdb.allops.*"

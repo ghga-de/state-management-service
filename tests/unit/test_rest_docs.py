@@ -19,13 +19,17 @@ from collections.abc import Mapping
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from typing import Any
+from unittest.mock import AsyncMock
 
 import pytest
 from ghga_service_commons.api.testing import AsyncTestClient
 
 from sms.config import Config
+from sms.core.docs_handler import DocsHandler
 from sms.inject import prepare_rest_app
-from sms.ports.outbound.docs import DocsDaoPort
+from sms.models import Criteria, DocumentType, UpsertionDetails
+from sms.ports.inbound.docs_handler import DocsHandlerPort
+from sms.ports.outbound.docs_dao import DocsDaoPort
 from tests.fixtures.config import DEFAULT_TEST_CONFIG
 
 pytestmark = pytest.mark.asyncio()
@@ -34,16 +38,16 @@ VALID_BEARER_TOKEN = "Bearer 43fadc91-b98f-4925-bd31-1b054b13dc55"
 
 @dataclass
 class DocsApiCallArgs:
-    """Arguments for an API call."""
+    """Encapsulates all the params used in a /docs/ API call of any kind."""
 
     method: str
     db_name: str
     collection: str
-    criteria: Mapping[str, Any] | None = None
-    documents: Mapping[str, Any] | list[Mapping[str, Any]] | None = None
+    criteria: Criteria | None = None
+    upsertion_details: UpsertionDetails | None = None
 
 
-class DummyDocsDao(DocsDaoPort):
+class DummyDocsHandler(DocsHandlerPort):
     """Dummy DocsDao implementation for unit testing."""
 
     calls: list[DocsApiCallArgs]
@@ -52,7 +56,10 @@ class DummyDocsDao(DocsDaoPort):
         self.calls = []
 
     async def get(self, db_name: str, collection: str, criteria: Mapping[str, Any]):
-        """Dummy get implementation."""
+        """Dummy get implementation. It records the call and returns an empty list.
+
+        Optionally, it raises a PermissionError if the collection is named "permission_error".
+        """
         call = DocsApiCallArgs(
             method="get", db_name=db_name, collection=collection, criteria=criteria
         )
@@ -65,18 +72,27 @@ class DummyDocsDao(DocsDaoPort):
         self,
         db_name: str,
         collection: str,
-        documents: Mapping[str, Any] | list[Mapping[str, Any]],
+        upsertion_details: UpsertionDetails,
     ):
-        """Dummy upsert implementation."""
+        """Dummy upsert implementation. It records the call.
+
+        Optionally, it raises a PermissionError if the collection is named "permission_error".
+        """
         call = DocsApiCallArgs(
-            method="put", db_name=db_name, collection=collection, documents=documents
+            method="put",
+            db_name=db_name,
+            collection=collection,
+            upsertion_details=upsertion_details,
         )
         self.calls.append(call)
         if collection == "permission_error":
             raise PermissionError()
 
     async def delete(self, db_name: str, collection: str, criteria: Mapping[str, Any]):
-        """Dummy delete implementation."""
+        """Dummy delete implementation. It records the call.
+
+        Optionally, it raises a PermissionError if the collection is named "permission_error".
+        """
         call = DocsApiCallArgs(
             method="delete", db_name=db_name, collection=collection, criteria=criteria
         )
@@ -86,10 +102,10 @@ class DummyDocsDao(DocsDaoPort):
 
 
 @asynccontextmanager
-async def get_rest_client(config: Config, docs_dao_override: DocsDaoPort):
+async def get_rest_client(config: Config, docs_handler_override: DocsHandlerPort):
     """Prepare a REST API client for testing."""
     async with prepare_rest_app(
-        config=config, docs_dao_override=docs_dao_override
+        config=config, docs_handler_override=docs_handler_override
     ) as app:
         async with AsyncTestClient(app) as client:
             yield client
@@ -97,10 +113,18 @@ async def get_rest_client(config: Config, docs_dao_override: DocsDaoPort):
 
 async def test_health_check():
     """Test the health check endpoint."""
-    async with get_rest_client(DEFAULT_TEST_CONFIG, DummyDocsDao()) as client:
+    async with get_rest_client(DEFAULT_TEST_CONFIG, DummyDocsHandler()) as client:
         response = await client.get("/health")
         assert response.status_code == 200
         assert response.json() == {"status": "OK"}
+
+
+async def test_permissions_retrieval():
+    """Test the permissions retrieval endpoint."""
+    async with get_rest_client(DEFAULT_TEST_CONFIG, DummyDocsHandler()) as client:
+        response = await client.get("/docs/permissions")
+        assert response.status_code == 200
+        assert response.json() == DEFAULT_TEST_CONFIG.db_permissions
 
 
 @pytest.mark.parametrize(
@@ -115,14 +139,14 @@ async def test_health_check():
 )
 async def test_unauthenticated_calls(http_method: str, headers: dict[str, str]):
     """Test unauthenticated calls, which should result in a 401 Unauthorized code."""
-    dummy_docs_dao = DummyDocsDao()
-    async with get_rest_client(DEFAULT_TEST_CONFIG, dummy_docs_dao) as client:
+    dummy_docs_handler = DummyDocsHandler()
+    async with get_rest_client(DEFAULT_TEST_CONFIG, dummy_docs_handler) as client:
         method_to_call = getattr(client, http_method)
         response = await method_to_call("/docs/testdb/testcollection", headers=headers)
 
     # Verify status code and make sure there were no DAO method calls
     assert response.status_code == 401
-    assert dummy_docs_dao.calls == []
+    assert dummy_docs_handler.calls == []
 
 
 @pytest.mark.parametrize(
@@ -135,12 +159,14 @@ async def test_unauthenticated_calls(http_method: str, headers: dict[str, str]):
     ids=["GET", "PUT", "DELETE"],
 )
 async def test_authenticated_valid_calls(http_method: str, expected_status_code: int):
-    """Verify authenticated calls are successfully passed to the DAO."""
-    dummy_docs_dao = DummyDocsDao()
-    async with get_rest_client(DEFAULT_TEST_CONFIG, dummy_docs_dao) as client:
+    """Verify authenticated calls are successfully passed to the handler."""
+    dummy_docs_handler = DummyDocsHandler()
+    async with get_rest_client(DEFAULT_TEST_CONFIG, dummy_docs_handler) as client:
         method_to_call = getattr(client, http_method)
 
-        put_args: dict[str, Any] = {"json": {}} if http_method == "put" else {}
+        put_args: dict[str, Any] = (
+            {"json": {"documents": {}}} if http_method == "put" else {}
+        )
         response = await method_to_call(
             url="/docs/testdb/testcollection",
             headers={"Authorization": VALID_BEARER_TOKEN},
@@ -154,9 +180,11 @@ async def test_authenticated_valid_calls(http_method: str, expected_status_code:
         db_name="testdb",
         collection="testcollection",
         criteria=None if http_method == "put" else {},
-        documents=None if http_method != "put" else {},
+        upsertion_details=None
+        if http_method != "put"
+        else UpsertionDetails(documents={}),
     )
-    assert dummy_docs_dao.calls == [call]
+    assert dummy_docs_handler.calls == [call]
 
 
 @pytest.mark.parametrize(
@@ -183,8 +211,8 @@ async def test_calls_with_query_params(
     as_dict: Mapping[str, str],
 ):
     """Verify calls with query parameters (GET and DELETE)."""
-    dummy_docs_dao = DummyDocsDao()
-    async with get_rest_client(DEFAULT_TEST_CONFIG, dummy_docs_dao) as client:
+    dummy_docs_handler = DummyDocsHandler()
+    async with get_rest_client(DEFAULT_TEST_CONFIG, dummy_docs_handler) as client:
         method_to_call = getattr(client, http_method)
         response = await method_to_call(
             url=f"/docs/testdb/testcollection?{query_string}",
@@ -199,7 +227,7 @@ async def test_calls_with_query_params(
         collection="testcollection",
         criteria=as_dict,
     )
-    assert dummy_docs_dao.calls == [call]
+    assert dummy_docs_handler.calls == [call]
 
 
 @pytest.mark.parametrize(
@@ -211,10 +239,12 @@ async def test_permission_errors(
     http_method: str,
 ):
     """Test that permission errors are handled correctly."""
-    dummy_docs_dao = DummyDocsDao()
-    async with get_rest_client(DEFAULT_TEST_CONFIG, dummy_docs_dao) as client:
+    dummy_docs_handler = DummyDocsHandler()
+    async with get_rest_client(DEFAULT_TEST_CONFIG, dummy_docs_handler) as client:
         method_to_call = getattr(client, http_method)
-        put_args: dict[str, Any] = {"json": {}} if http_method == "put" else {}
+        put_args: dict[str, Any] = (
+            {"json": {"documents": {}}} if http_method == "put" else {}
+        )
         response = await method_to_call(
             url="/docs/testdb/permission_error",
             headers={"Authorization": VALID_BEARER_TOKEN},
@@ -222,19 +252,20 @@ async def test_permission_errors(
         )
     assert response.status_code == 403
 
-    assert len(dummy_docs_dao.calls) == 1
-    assert dummy_docs_dao.calls[0].method == http_method
+    assert len(dummy_docs_handler.calls) == 1
+    assert dummy_docs_handler.calls[0].method == http_method
 
 
 async def test_put_with_docs():
     """Test PUT with documents."""
-    dummy_docs_dao = DummyDocsDao()
-    docs_to_insert: list[Mapping[str, Any]] = [{"name": "Alice"}, {"name": "Bob"}]
-    async with get_rest_client(DEFAULT_TEST_CONFIG, dummy_docs_dao) as client:
+    dummy_docs_handler = DummyDocsHandler()
+    docs_to_insert: list[DocumentType] = [{"name": "Alice"}, {"name": "Bob"}]
+    upsertion_details = UpsertionDetails(documents=docs_to_insert)
+    async with get_rest_client(DEFAULT_TEST_CONFIG, dummy_docs_handler) as client:
         response = await client.put(
             url="/docs/testdb/testcollection",
             headers={"Authorization": VALID_BEARER_TOKEN},
-            json=docs_to_insert,
+            json=upsertion_details.model_dump(),
         )
 
     # Verify status code and DAO method calls
@@ -243,6 +274,58 @@ async def test_put_with_docs():
         method="put",
         db_name="testdb",
         collection="testcollection",
-        documents=docs_to_insert,
+        upsertion_details=UpsertionDetails(documents=docs_to_insert),
     )
-    assert dummy_docs_dao.calls == [call]
+    assert dummy_docs_handler.calls == [call]
+
+
+async def test_put_with_missing_id_field():
+    """Test that a missing id field in the documents causes a 422 error."""
+    config = DEFAULT_TEST_CONFIG
+    docs_dao = AsyncMock(spec=DocsDaoPort)
+    docs_handler = DocsHandler(config=config, docs_dao=docs_dao)
+    # Try to insert docs without specifying an id field (default is _id)
+    docs_to_insert: list[DocumentType] = [
+        {"_id": "1", "name": "Alice"},
+        {"name": "Bob"},
+    ]
+    upsertion_details = UpsertionDetails(documents=docs_to_insert)
+    async with get_rest_client(
+        DEFAULT_TEST_CONFIG, docs_handler_override=docs_handler
+    ) as client:
+        response = await client.put(
+            url="/docs/testdb/allops",
+            headers={"Authorization": VALID_BEARER_TOKEN},
+            json=upsertion_details.model_dump(),
+        )
+
+    # Verify status code and DAO method calls
+    assert response.status_code == 422
+
+
+async def test_failed_db_operation():
+    """Test that a failed DB operation results in a 500 error."""
+    dummy_docs_handler = AsyncMock(spec=DocsHandlerPort)
+    dummy_docs_handler.get.side_effect = DocsHandlerPort.OperationError()
+    dummy_docs_handler.upsert.side_effect = DocsHandlerPort.OperationError()
+    dummy_docs_handler.delete.side_effect = DocsHandlerPort.OperationError()
+
+    async with get_rest_client(DEFAULT_TEST_CONFIG, dummy_docs_handler) as client:
+        response = await client.get(
+            url="/docs/testdb/permission_error",
+            headers={"Authorization": VALID_BEARER_TOKEN},
+        )
+        assert response.status_code == 500
+
+        response = await client.put(
+            url="/docs/testdb/permission_error",
+            headers={"Authorization": VALID_BEARER_TOKEN},
+            json=UpsertionDetails(documents={}).model_dump(),
+        )
+        assert response.status_code == 500
+
+        response = await client.delete(
+            url="/docs/testdb/permission_error",
+            headers={"Authorization": VALID_BEARER_TOKEN},
+        )
+        assert response.status_code == 500
