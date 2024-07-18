@@ -22,11 +22,10 @@ from fastapi import Depends
 from ghga_service_commons.api.di import DependencyDummy
 
 from sms.config import Config
-from sms.ports.outbound.docs import DocsDaoPort
+from sms.ports.inbound.docs_handler import DocsHandlerPort
 
-# TODO: Remove config dummy if it's not needed
 config_dummy = DependencyDummy("config_dummy")
-docs_dao_port = DependencyDummy("docs_dao_port")
+docs_handler_port = DependencyDummy("docs_handler_port")
 
 ConfigDummy = Annotated[Config, Depends(config_dummy)]
-DocsDaoPortDummy = Annotated[DocsDaoPort, Depends(docs_dao_port)]
+DocsHandlerPortDummy = Annotated[DocsHandlerPort, Depends(docs_handler_port)]

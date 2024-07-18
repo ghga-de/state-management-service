@@ -14,39 +14,39 @@
 # limitations under the License.
 """Dependency injection required to run the SMS service."""
 
-from collections.abc import AsyncGenerator, Generator
-from contextlib import asynccontextmanager, contextmanager, nullcontext
+from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
 from typing import Any
 
 from fastapi import FastAPI
+from ghga_service_commons.utils.context import asyncnullcontext
 
-from sms.api import dummies
-from sms.api.configure import get_configured_app
+from sms.adapters.inbound.fastapi_ import dummies
+from sms.adapters.inbound.fastapi_.configure import get_configured_app
+from sms.adapters.outbound.docs_dao import DocsDao
 from sms.config import Config
-from sms.core.docs import DocsDao
-from sms.ports.outbound.docs import DocsDaoPort
-
-# TODO: Remove config dummy if it's not needed
+from sms.core.docs_handler import DocsHandler
+from sms.ports.inbound.docs_handler import DocsHandlerPort
 
 
-@contextmanager
-def prepare_docs_dao(
-    *,
-    config: Config,
-) -> Generator[DocsDaoPort, None, None]:
+@asynccontextmanager
+async def prepare_docs_handler(
+    *, config: Config
+) -> AsyncGenerator[DocsHandlerPort, None]:
     """Prepare a dummy for the DocsDaoPort dependency."""
-    docs_dao = DocsDao(config=config)
-    yield docs_dao
+    async with DocsDao(config=config) as docs_dao:
+        docs_handler = DocsHandler(config=config, docs_dao=docs_dao)
+        yield docs_handler
 
 
-def prepare_docs_dao_with_override(
-    *, config: Config, docs_dao_override: DocsDaoPort | None = None
+def prepare_docs_handler_with_override(
+    *, config: Config, docs_handler_override: DocsHandlerPort | None = None
 ):
-    """Resolve the docs dao context manager based on config and override (if any)."""
+    """Resolve the docs handler context manager based on config and override (if any)."""
     return (
-        nullcontext(docs_dao_override)
-        if docs_dao_override
-        else prepare_docs_dao(config=config)
+        asyncnullcontext(docs_handler_override)
+        if docs_handler_override
+        else prepare_docs_handler(config=config)
     )
 
 
@@ -54,17 +54,17 @@ def prepare_docs_dao_with_override(
 async def prepare_rest_app(
     *,
     config: Config,
-    docs_dao_override: Any | None = None,
+    docs_handler_override: Any | None = None,
 ) -> AsyncGenerator[FastAPI, None]:
     """Construct and initialize a REST API app along with all its dependencies.
     By default, the core dependencies are automatically prepared but you can also
-    provide them using the docs_dao_override parameter.
+    provide them using the docs_handler_override parameter.
     """
     app = get_configured_app(config=config)
 
-    with prepare_docs_dao_with_override(
-        config=config, docs_dao_override=docs_dao_override
+    async with prepare_docs_handler_with_override(
+        config=config, docs_handler_override=docs_handler_override
     ) as docs_dao:
         app.dependency_overrides[dummies.config_dummy] = lambda: config
-        app.dependency_overrides[dummies.docs_dao_port] = lambda: docs_dao
+        app.dependency_overrides[dummies.docs_handler_port] = lambda: docs_dao
         yield app

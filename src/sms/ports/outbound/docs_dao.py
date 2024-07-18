@@ -12,12 +12,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """Contains port definition for a Doc Handler"""
 
 from abc import ABC, abstractmethod
-from collections.abc import Mapping
-from typing import Any
+
+from sms.models import Criteria, DocumentType
 
 
 # TODO: Document errors and args for each method
@@ -26,24 +25,26 @@ class DocsDaoPort(ABC):
 
     @abstractmethod
     async def get(
-        self, db_name: str, collection: str, criteria: Mapping[str, Any]
-    ) -> list[Mapping[str, Any]]:
+        self, *, db_name: str, collection: str, criteria: Criteria
+    ) -> list[DocumentType]:
         """Get documents satisfying the criteria."""
         ...
 
     @abstractmethod
     async def upsert(
         self,
+        *,
         db_name: str,
         collection: str,
-        documents: Mapping[str, Any] | list[Mapping[str, Any]],
+        id_field: str,
+        documents: list[DocumentType],
     ) -> None:
-        """Insert or update a document."""
+        """Insert or update one or more documents."""
         ...
 
     @abstractmethod
     async def delete(
-        self, db_name: str, collection: str, criteria: Mapping[str, Any]
+        self, *, db_name: str, collection: str, criteria: Criteria
     ) -> None:
         """Delete documents satisfying the criteria."""
         ...

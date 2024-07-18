@@ -22,7 +22,7 @@ from ghga_service_commons.auth.policies import require_auth_context_using_creden
 from ghga_service_commons.utils.simple_token import check_token
 from pydantic import BaseModel, Field
 
-from sms.api.dummies import ConfigDummy
+from sms.adapters.inbound.fastapi_.dummies import ConfigDummy
 
 __all__ = ["TokenAuthContext", "require_token"]
 

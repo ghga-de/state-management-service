@@ -21,14 +21,17 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Request, status
 from fastapi.exceptions import HTTPException
 
-from sms.api import dummies
-from sms.api.http_authorization import TokenAuthContext, require_token
+from sms.adapters.inbound.fastapi_ import dummies
+from sms.adapters.inbound.fastapi_.http_authorization import (
+    TokenAuthContext,
+    require_token,
+)
+from sms.models import UpsertionDetails
+from sms.ports.inbound.docs_handler import DocsHandlerPort
 
 router = APIRouter()
 
 
-# TODO: Remove config dummy if it's not needed
-# TODO: See about adding an endpoint to get the accessible collections
 @router.get(
     "/health",
     summary="health",
@@ -41,6 +44,19 @@ async def health():
 
 
 @router.get(
+    "/docs/permissions",
+    tags=["StateManagementService", "sms-mongodb"],
+    summary="Returns the configured db permissions list.",
+    status_code=200,
+)
+async def get_configured_permissions(
+    config: dummies.ConfigDummy,
+) -> list[str]:
+    """Returns the configured db permissions list."""
+    return config.db_permissions or []
+
+
+@router.get(
     "/docs/{db_name}/{collection}",
     tags=["StateManagementService", "sms-mongodb"],
     summary="Returns all or some documents from the specified collection.",
@@ -50,14 +66,14 @@ async def get_docs(
     db_name: str,
     collection: str,
     request: Request,
-    docs_dao: dummies.DocsDaoPortDummy,
+    docs_handler: dummies.DocsHandlerPortDummy,
     _token: Annotated[TokenAuthContext, require_token],
 ) -> list[Mapping[str, Any]]:
     """Returns all or some documents from the specified collection."""
     query_params: Mapping[str, str] = dict(request.query_params)
 
     try:
-        results = await docs_dao.get(
+        results = await docs_handler.get(
             db_name=db_name,
             collection=collection,
             criteria=query_params,
@@ -66,6 +82,11 @@ async def get_docs(
     except PermissionError as err:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
+            detail=str(err),
+        ) from err
+    except DocsHandlerPort.OperationError as err:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(err),
         ) from err
 
@@ -82,20 +103,30 @@ async def get_docs(
 async def upsert_docs(
     db_name: str,
     collection: str,
-    documents: Mapping[str, Any] | list[Mapping[str, Any]],
-    docs_dao: dummies.DocsDaoPortDummy,
+    upsertion_details: UpsertionDetails,
+    docs_handler: dummies.DocsHandlerPortDummy,
     _token: Annotated[TokenAuthContext, require_token],
 ):
     """Upserts the document(s) provided in the request body in the specified collection."""
     try:
-        await docs_dao.upsert(
+        await docs_handler.upsert(
             db_name=db_name,
             collection=collection,
-            documents=documents,
+            upsertion_details=upsertion_details,
         )
     except PermissionError as err:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
+            detail=str(err),
+        ) from err
+    except DocsHandlerPort.MissingIdFieldError as err:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(err),
+        ) from err
+    except DocsHandlerPort.OperationError as err:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(err),
         ) from err
 
@@ -110,14 +141,14 @@ async def delete_docs(
     db_name: str,
     collection: str,
     request: Request,
-    docs_dao: dummies.DocsDaoPortDummy,
+    docs_handler: dummies.DocsHandlerPortDummy,
     _token: Annotated[TokenAuthContext, require_token],
 ):
     """Upserts the document(s) provided in the request body in the specified collection."""
     query_params: Mapping[str, str] = dict(request.query_params)
 
     try:
-        await docs_dao.delete(
+        await docs_handler.delete(
             db_name=db_name,
             collection=collection,
             criteria=query_params,
@@ -125,5 +156,10 @@ async def delete_docs(
     except PermissionError as err:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
+            detail=str(err),
+        ) from err
+    except DocsHandlerPort.OperationError as err:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(err),
         ) from err

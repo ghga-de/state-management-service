@@ -12,27 +12,23 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#
+"""Models used in the SMS"""
 
-"""Used to define the location of the main FastAPI app object."""
-
+from collections.abc import Mapping
 from typing import Any
 
-from fastapi import FastAPI
+from pydantic import BaseModel, Field
 
-from sms.adapters.inbound.fastapi_.configure import get_openapi_schema
-from sms.adapters.inbound.fastapi_.routes import router
-
-app = FastAPI()
-app.include_router(router)
+DocumentType = Mapping[str, Any]
+Criteria = Mapping[str, Any]
 
 
-def custom_openapi() -> dict[str, Any]:
-    if app.openapi_schema:
-        return app.openapi_schema
-    openapi_schema = get_openapi_schema(app)
-    app.openapi_schema = openapi_schema
-    return openapi_schema
+class UpsertionDetails(BaseModel):
+    """Details for upserting documents in a collection."""
 
-
-app.openapi = custom_openapi  # type: ignore [method-assign]
+    id_field: str = Field(
+        default="_id", description="The field to use as the document id."
+    )
+    documents: DocumentType | list[DocumentType] = Field(
+        default=..., description="The document(s) to upsert."
+    )

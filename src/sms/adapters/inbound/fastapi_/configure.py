@@ -22,7 +22,7 @@ from fastapi.openapi.utils import get_openapi
 from ghga_service_commons.api import ApiConfigBase, configure_app
 
 from sms import __version__
-from sms.api.routes import router
+from sms.adapters.inbound.fastapi_.routes import router
 
 
 def get_openapi_schema(api: FastAPI) -> dict[str, Any]:
