@@ -19,7 +19,6 @@ from abc import ABC, abstractmethod
 from sms.models import Criteria, DocumentType
 
 
-# TODO: Document errors and args for each method
 class DocsDaoPort(ABC):
     """Port definition for a Doc Handler"""
 
@@ -27,7 +26,13 @@ class DocsDaoPort(ABC):
     async def get(
         self, *, db_name: str, collection: str, criteria: Criteria
     ) -> list[DocumentType]:
-        """Get documents satisfying the criteria."""
+        """Get documents satisfying the criteria.
+
+        Args:
+        - `db_name`: The database name.
+        - `collection`: The collection name.
+        - `criteria`: The criteria to use for filtering the documents (mapping)
+        """
         ...
 
     @abstractmethod
@@ -39,12 +44,25 @@ class DocsDaoPort(ABC):
         id_field: str,
         documents: list[DocumentType],
     ) -> None:
-        """Insert or update one or more documents."""
+        """Insert or update one or more documents.
+
+        Args:
+        - `db_name`: The database name.
+        - `collection`: The collection name.
+        - `id_field`: The field to use as the document id, which must be present on each doc.
+        - `documents`: A list of the documents to upsert.
+        """
         ...
 
     @abstractmethod
     async def delete(
         self, *, db_name: str, collection: str, criteria: Criteria
     ) -> None:
-        """Delete documents satisfying the criteria."""
+        """Delete documents satisfying the criteria.
+
+        Args:
+        - `db_name`: The database name.
+        - `collection`: The collection name.
+        - `criteria`: The criteria to use for filtering the documents (mapping)
+        """
         ...

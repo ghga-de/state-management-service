@@ -38,17 +38,49 @@ class DocsHandlerPort(ABC):
     async def get(
         self, db_name: str, collection: str, criteria: Criteria
     ) -> list[DocumentType]:
-        """Get documents satisfying the criteria."""
+        """Get documents satisfying the criteria.
+
+        Args:
+        - `db_name`: The name of the database.
+        - `collection`: The name of the collection.
+        - `criteria`: The criteria to filter the documents (mapping).
+
+        Raises:
+        - `PermissionError`: If the operation is not allowed per configuration.
+        - `OperationError`: If the operation fails in the database for any reason.
+        """
         ...
 
     @abstractmethod
     async def upsert(
         self, db_name: str, collection: str, upsertion_details: UpsertionDetails
     ) -> None:
-        """Insert or update one or more documents."""
+        """Insert or update one or more documents.
+
+        Args:
+        - `db_name`: The database name.
+        - `collection`: The collection name.
+        - `upsertion_details`: The details for upserting the documents, which include the
+                id_field and the documents to upsert.
+
+        Raises:
+        - `PermissionError`: If the operation is not allowed per configuration.
+        - `MissingIdFieldError`: If the id_field is missing in any of the documents.
+        - `OperationError`: If the operation fails in the database for any reason.
+        """
         ...
 
     @abstractmethod
     async def delete(self, db_name: str, collection: str, criteria: Criteria) -> None:
-        """Delete documents satisfying the criteria."""
+        """Delete documents satisfying the criteria.
+
+        Args:
+        - `db_name`: The name of the database.
+        - `collection`: The name of the collection.
+        - `criteria`: The criteria to filter the documents (mapping).
+
+        Raises:
+        - `PermissionError`: If the operation is not allowed per configuration.
+        - `OperationError`: If the operation fails in the database for any reason.
+        """
         ...

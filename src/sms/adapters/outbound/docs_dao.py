@@ -20,8 +20,6 @@ from sms.config import Config
 from sms.models import Criteria, DocumentType
 from sms.ports.outbound.docs_dao import DocsDaoPort
 
-# TODO: Document errors and args for each method
-
 
 class DocsDao(DocsDaoPort):
     """A class to perform CRUD operations in MongoDB."""
@@ -43,7 +41,13 @@ class DocsDao(DocsDaoPort):
     async def get(
         self, *, db_name: str, collection: str, criteria: Criteria
     ) -> list[DocumentType]:
-        """Get documents satisfying the criteria."""
+        """Get documents satisfying the criteria.
+
+        Args:
+        - `db_name`: The database name.
+        - `collection`: The collection name.
+        - `criteria`: The criteria to use for filtering the documents (mapping)
+        """
         return [x async for x in self._client[db_name][collection].find(criteria)]
 
     async def upsert(
@@ -54,7 +58,14 @@ class DocsDao(DocsDaoPort):
         id_field: str,
         documents: list[DocumentType],
     ) -> None:
-        """Insert or update one or more documents."""
+        """Insert or update one or more documents.
+
+        Args:
+        - `db_name`: The database name.
+        - `collection`: The collection name.
+        - `id_field`: The field to use as the document id, which must be present on each doc.
+        - `documents`: A list of the documents to upsert.
+        """
         collection_instance = self._client[db_name][collection]
 
         for doc in documents:
@@ -65,5 +76,11 @@ class DocsDao(DocsDaoPort):
     async def delete(
         self, *, db_name: str, collection: str, criteria: Criteria
     ) -> None:
-        """Delete documents satisfying the criteria."""
+        """Delete documents satisfying the criteria.
+
+        Args:
+        - `db_name`: The database name.
+        - `collection`: The collection name.
+        - `criteria`: The criteria to use for filtering the documents (mapping)
+        """
         await self._client[db_name][collection].delete_many(criteria)

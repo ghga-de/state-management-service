@@ -23,7 +23,6 @@ from sms.ports.inbound.docs_handler import DocsHandlerPort
 from sms.ports.outbound.docs_dao import DocsDaoPort
 
 
-# TODO: Document errors and args for each method
 def log_and_raise_permissions_error(db_name: str, collection: str, operation: str):
     """Log and raise a PermissionError."""
     error = PermissionError(
@@ -86,7 +85,17 @@ class DocsHandler(DocsHandlerPort):
     async def get(
         self, db_name: str, collection: str, criteria: Criteria
     ) -> list[DocumentType]:
-        """Get documents satisfying the criteria."""
+        """Get documents satisfying the criteria.
+
+        Args:
+        - `db_name`: The name of the database.
+        - `collection`: The name of the collection.
+        - `criteria`: The criteria to filter the documents (mapping).
+
+        Raises:
+        - `PermissionError`: If the operation is not allowed per configuration.
+        - `OperationError`: If the operation fails in the database for any reason.
+        """
         if not self._permissions.can_read(db_name, collection):
             log_and_raise_permissions_error(db_name, collection, "read")
 
@@ -105,7 +114,19 @@ class DocsHandler(DocsHandlerPort):
     async def upsert(
         self, db_name: str, collection: str, upsertion_details: UpsertionDetails
     ) -> None:
-        """Insert or update one or more documents."""
+        """Insert or update one or more documents.
+
+        Args:
+        - `db_name`: The database name.
+        - `collection`: The collection name.
+        - `upsertion_details`: The details for upserting the documents, which include the
+                id_field and the documents to upsert.
+
+        Raises:
+        - `PermissionError`: If the operation is not allowed per configuration.
+        - `MissingIdFieldError`: If the id_field is missing in any of the documents.
+        - `OperationError`: If the operation fails in the database for any reason.
+        """
         # Get permissions for collection
         can_write = self._permissions.can_write(db_name, collection)
 
@@ -143,7 +164,17 @@ class DocsHandler(DocsHandlerPort):
             raise error from err
 
     async def delete(self, db_name: str, collection: str, criteria: Criteria) -> None:
-        """Delete documents satisfying the criteria."""
+        """Delete documents satisfying the criteria.
+
+        Args:
+        - `db_name`: The name of the database.
+        - `collection`: The name of the collection.
+        - `criteria`: The criteria to filter the documents (mapping).
+
+        Raises:
+        - `PermissionError`: If the operation is not allowed per configuration.
+        - `OperationError`: If the operation fails in the database for any reason.
+        """
         if not self._permissions.can_write(db_name, collection):
             log_and_raise_permissions_error(db_name, collection, "write")
 
