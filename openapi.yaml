@@ -63,7 +63,7 @@ paths:
   /docs/permissions:
     get:
       description: Returns the configured db permissions list.
-      operationId: get_permissions_docs_permissions_get
+      operationId: get_configured_permissions_docs_permissions_get
       responses:
         '200':
           content:
@@ -71,7 +71,7 @@ paths:
               schema:
                 items:
                   type: string
-                title: Response Get Permissions Docs Permissions Get
+                title: Response Get Configured Permissions Docs Permissions Get
                 type: array
           description: Successful Response
       summary: Returns the configured db permissions list.
