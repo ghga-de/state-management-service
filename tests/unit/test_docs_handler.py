@@ -23,14 +23,9 @@ from hexkit.providers.mongodb.testutils import MongoDbFixture
 
 from sms.core.docs_handler import DocsHandler, Permissions
 from sms.inject import prepare_docs_handler
-from sms.models import DocumentType, UpsertionDetails
+from sms.models import Criteria, DocumentType, UpsertionDetails
 from sms.ports.outbound.docs_dao import DocsDaoPort
 from tests.fixtures.config import get_config
-
-# tests:
-# doc dao class
-#     test for erring and successful calls to each method
-#     test for correct prefix usage
 
 TEST_DOCS: list[DocumentType] = [
     {"_id": "1", "test": "test"},
@@ -44,6 +39,43 @@ ALLOPS = "allops"
 UNLISTED_COLLECTION = "unlistedcollection"
 UNLISTED_DB = "unlisteddb"
 TEST_DB = "testdb"
+
+
+@pytest.mark.parametrize(
+    "query_params, expected_results",
+    [
+        ({}, {}),
+        ({"plain": "value"}, {"plain": "value"}),
+        ({"nested": '{"str": "45"}'}, {"nested": {"str": "45"}}),
+        ({"nested": '{"num": 45}'}, {"nested": {"num": 45}}),
+        (
+            {"outer": '{"inner": {"str": "45"}}'},
+            {"outer": {"inner": {"str": "45"}}},
+        ),
+    ],
+    ids=["empty", "plain", "nested_str", "nested_num", "double_nested"],
+)
+def test_parse_criteria(query_params: Criteria, expected_results: Criteria):
+    """Test the parse_criteria method."""
+    docs_handler = DocsHandler(config=get_config(), docs_dao=AsyncMock())
+    parsed_criteria = docs_handler._parse_criteria(query_params)
+    assert parsed_criteria == expected_results
+
+
+@pytest.mark.parametrize(
+    "query_params",
+    [
+        {"key": "{str: 45}"},
+        {"key": '{"str": test}'},
+        {"key": "extra", "problem": '{"outer": {"inner": "center"}'},
+    ],
+    ids=["key_missing_quotes", "value_missing_quotes", "missing_brackets"],
+)
+def test_criteria_format_error(query_params: Criteria):
+    """Test the CriteriaFormatError class."""
+    with pytest.raises(DocsHandler.CriteriaFormatError):
+        docs_handler = DocsHandler(config=get_config(), docs_dao=AsyncMock())
+        docs_handler._parse_criteria(query_params)
 
 
 def test_permissions():
@@ -156,3 +188,37 @@ async def test_dao_error_handling():
 
     with pytest.raises(DocsHandler.OperationError):
         await docs_handler.delete(db_name=TEST_DB, collection=ALLOPS, criteria={})
+
+
+@pytest.mark.asyncio
+async def test_prefix_handling_wrt_permissions():
+    """Test that the prefix is correctly handled."""
+    # Make sure the db_prefix is not empty
+    config = get_config()
+    assert config.db_prefix
+    docs_handler = DocsHandler(config=config, docs_dao=AsyncMock())
+
+    # Query the readwrite collection with the prefix included (meaning the docs_handler
+    # will look for test_test_testdb.readwrite instead of just test_testdb.readwrite)
+    full_name = f"{config.db_prefix}{TEST_DB}"
+    with pytest.raises(PermissionError):
+        await docs_handler.get(db_name=full_name, collection=READWRITE, criteria={})
+
+    with pytest.raises(PermissionError):
+        await docs_handler.upsert(
+            db_name=full_name,
+            collection=READWRITE,
+            upsertion_details=UpsertionDetails(documents=TEST_DOCS),
+        )
+
+    with pytest.raises(PermissionError):
+        await docs_handler.delete(db_name=full_name, collection=READWRITE, criteria={})
+
+    # Make sure performing the same operations without the prefix works fine
+    await docs_handler.get(db_name=TEST_DB, collection=ALLOPS, criteria={})
+    await docs_handler.upsert(
+        db_name=TEST_DB,
+        collection=ALLOPS,
+        upsertion_details=UpsertionDetails(documents=TEST_DOCS),
+    )
+    await docs_handler.delete(db_name=TEST_DB, collection=ALLOPS, criteria={})

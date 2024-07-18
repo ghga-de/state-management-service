@@ -26,7 +26,7 @@ from sms.adapters.inbound.fastapi_.http_authorization import (
     TokenAuthContext,
     require_token,
 )
-from sms.models import UpsertionDetails
+from sms.models import Criteria, DocumentType, UpsertionDetails
 from sms.ports.inbound.docs_handler import DocsHandlerPort
 
 router = APIRouter()
@@ -61,6 +61,7 @@ async def get_configured_permissions(
     tags=["StateManagementService", "sms-mongodb"],
     summary="Returns all or some documents from the specified collection.",
     status_code=status.HTTP_200_OK,
+    response_model=list[DocumentType],
 )
 async def get_docs(
     db_name: str,
@@ -70,7 +71,7 @@ async def get_docs(
     _token: Annotated[TokenAuthContext, require_token],
 ) -> list[Mapping[str, Any]]:
     """Returns all or some documents from the specified collection."""
-    query_params: Mapping[str, str] = dict(request.query_params)
+    query_params: Criteria = dict(request.query_params)
 
     try:
         results = await docs_handler.get(
@@ -88,6 +89,11 @@ async def get_docs(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(err),
+        ) from err
+    except DocsHandlerPort.CriteriaFormatError as err:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Check query parameters: {err}",
         ) from err
 
 
@@ -145,7 +151,7 @@ async def delete_docs(
     _token: Annotated[TokenAuthContext, require_token],
 ):
     """Upserts the document(s) provided in the request body in the specified collection."""
-    query_params: Mapping[str, str] = dict(request.query_params)
+    query_params: Criteria = dict(request.query_params)
 
     try:
         await docs_handler.delete(
@@ -162,4 +168,9 @@ async def delete_docs(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(err),
+        ) from err
+    except DocsHandlerPort.CriteriaFormatError as err:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Check query parameters: {err}",
         ) from err

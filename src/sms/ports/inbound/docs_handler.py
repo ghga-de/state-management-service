@@ -34,6 +34,12 @@ class DocsHandlerPort(ABC):
         def __init__(self):
             super().__init__("The database operation failed.")
 
+    class CriteriaFormatError(RuntimeError):
+        """Raised when the criteria format is invalid."""
+
+        def __init__(self, *, key: str):
+            super().__init__(f"The value for key '{key}' is invalid.")
+
     @abstractmethod
     async def get(
         self, db_name: str, collection: str, criteria: Criteria
@@ -48,6 +54,7 @@ class DocsHandlerPort(ABC):
         Raises:
         - `PermissionError`: If the operation is not allowed per configuration.
         - `OperationError`: If the operation fails in the database for any reason.
+        - `CriteriaFormatError`: If the filter criteria format is invalid.
         """
         ...
 
@@ -82,5 +89,6 @@ class DocsHandlerPort(ABC):
         Raises:
         - `PermissionError`: If the operation is not allowed per configuration.
         - `OperationError`: If the operation fails in the database for any reason.
+        - `CriteriaFormatError`: If the filter criteria format is invalid.
         """
         ...

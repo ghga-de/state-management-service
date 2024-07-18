@@ -33,7 +33,7 @@ from sms.ports.inbound.docs_handler import DocsHandlerPort
 async def prepare_docs_handler(
     *, config: Config
 ) -> AsyncGenerator[DocsHandlerPort, None]:
-    """Prepare a dummy for the DocsDaoPort dependency."""
+    """Prepare the DocsHandler with a DocsDao to manage the database."""
     async with DocsDao(config=config) as docs_dao:
         docs_handler = DocsHandler(config=config, docs_dao=docs_dao)
         yield docs_handler
@@ -58,7 +58,7 @@ async def prepare_rest_app(
 ) -> AsyncGenerator[FastAPI, None]:
     """Construct and initialize a REST API app along with all its dependencies.
     By default, the core dependencies are automatically prepared but you can also
-    provide them using the docs_handler_override parameter.
+    provide them using the "_override" parameter(s).
     """
     app = get_configured_app(config=config)
 

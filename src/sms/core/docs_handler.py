@@ -14,8 +14,9 @@
 # limitations under the License.
 """Contains the implementation of hte DocsHandler, providing the business logic for handling documents."""
 
+import json
 import logging
-from typing import NamedTuple
+from typing import Literal, NamedTuple
 
 from sms.config import Config
 from sms.models import Criteria, DocumentType, UpsertionDetails
@@ -23,10 +24,14 @@ from sms.ports.inbound.docs_handler import DocsHandlerPort
 from sms.ports.outbound.docs_dao import DocsDaoPort
 
 
-def log_and_raise_permissions_error(db_name: str, collection: str, operation: str):
+def log_and_raise_permissions_error(
+    db_name: str, collection: str, operation: Literal["read", "write"]
+):
     """Log and raise a PermissionError."""
+    rule = f"{db_name}.{collection}.{operation[0]}"
     error = PermissionError(
-        f"Operation '{operation}' not allowed on db '{db_name}' collection '{collection}'.",
+        f"'{operation.title()}' operations not allowed on db '{db_name}',"
+        + f" collection '{collection}'. No rule found that matches '{rule}'",
     )
     logging.error(
         error,
@@ -82,6 +87,27 @@ class DocsHandler(DocsHandlerPort):
         self._permissions = Permissions(permissions=config.db_permissions or [])
         self._docs_dao = docs_dao
 
+    def _parse_criteria(self, criteria: Criteria) -> Criteria:
+        """Parse the criteria, converting any JSON strings to objects."""
+        parsed_criteria = {**criteria}
+        for key, value in criteria.items():
+            if (
+                isinstance(value, str)
+                and value.startswith("{")
+                and value.endswith("}")
+                and ":" in value
+            ):
+                try:
+                    parsed_criteria[key] = json.loads(value)
+                except json.JSONDecodeError as err:
+                    error = self.CriteriaFormatError(key=key)
+                    logging.error(
+                        error,
+                        extra={"key": key, "value": value},
+                    )
+                    raise error from err
+        return parsed_criteria
+
     async def get(
         self, db_name: str, collection: str, criteria: Criteria
     ) -> list[DocumentType]:
@@ -95,14 +121,17 @@ class DocsHandler(DocsHandlerPort):
         Raises:
         - `PermissionError`: If the operation is not allowed per configuration.
         - `OperationError`: If the operation fails in the database for any reason.
+        - `CriteriaFormatError`: If the filter criteria format is invalid.
         """
         if not self._permissions.can_read(db_name, collection):
             log_and_raise_permissions_error(db_name, collection, "read")
 
+        parsed_criteria = self._parse_criteria(criteria)
+
         full_db_name = f"{self._prefix}_{db_name}"
         try:
             results = await self._docs_dao.get(
-                db_name=full_db_name, collection=collection, criteria=criteria
+                db_name=full_db_name, collection=collection, criteria=parsed_criteria
             )
         except Exception as err:
             error = self.OperationError()
@@ -174,15 +203,17 @@ class DocsHandler(DocsHandlerPort):
         Raises:
         - `PermissionError`: If the operation is not allowed per configuration.
         - `OperationError`: If the operation fails in the database for any reason.
+        - `CriteriaFormatError`: If the filter criteria format is invalid.
         """
         if not self._permissions.can_write(db_name, collection):
             log_and_raise_permissions_error(db_name, collection, "write")
 
+        parsed_criteria = self._parse_criteria(criteria)
         full_db_name = f"{self._prefix}_{db_name}"
 
         try:
             await self._docs_dao.delete(
-                db_name=full_db_name, collection=collection, criteria=criteria
+                db_name=full_db_name, collection=collection, criteria=parsed_criteria
             )
         except Exception as err:
             error = self.OperationError()

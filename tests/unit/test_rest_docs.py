@@ -329,3 +329,21 @@ async def test_failed_db_operation():
             headers={"Authorization": VALID_BEARER_TOKEN},
         )
         assert response.status_code == 500
+
+
+@pytest.mark.parametrize("http_method", ["get", "delete"])
+async def test_criteria_format_error_handling(http_method: str):
+    """Test that CriteriaFormatError is handled correctly."""
+    dummy_docs_handler = AsyncMock(spec=DocsHandlerPort)
+    expected_error = DocsHandlerPort.CriteriaFormatError(key="test")
+    dummy_docs_handler.get.side_effect = expected_error
+    dummy_docs_handler.delete.side_effect = expected_error
+
+    async with get_rest_client(DEFAULT_TEST_CONFIG, dummy_docs_handler) as client:
+        method_to_call = getattr(client, http_method)
+        response = await method_to_call(
+            url="/docs/testdb/testcollection",
+            headers={"Authorization": VALID_BEARER_TOKEN},
+        )
+
+    assert response.status_code == 422
