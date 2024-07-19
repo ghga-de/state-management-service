@@ -128,7 +128,7 @@ class DocsHandler(DocsHandlerPort):
 
         parsed_criteria = self._parse_criteria(criteria)
 
-        full_db_name = f"{self._prefix}_{db_name}"
+        full_db_name = f"{self._prefix}{db_name}"
         try:
             results = await self._docs_dao.get(
                 db_name=full_db_name, collection=collection, criteria=parsed_criteria
@@ -172,7 +172,7 @@ class DocsHandler(DocsHandlerPort):
             if id_field not in doc:
                 raise self.MissingIdFieldError(id_field=id_field)
 
-        full_db_name = f"{self._prefix}_{db_name}"
+        full_db_name = f"{self._prefix}{db_name}"
         try:
             await self._docs_dao.upsert(
                 db_name=full_db_name,
@@ -209,7 +209,7 @@ class DocsHandler(DocsHandlerPort):
             log_and_raise_permissions_error(db_name, collection, "write")
 
         parsed_criteria = self._parse_criteria(criteria)
-        full_db_name = f"{self._prefix}_{db_name}"
+        full_db_name = f"{self._prefix}{db_name}"
 
         try:
             await self._docs_dao.delete(

@@ -13,9 +13,9 @@ and the Hashicorp Vault.
 
 This service should **never** be deployed to production. It is *only* intended for use
 in the Testing and Staging environments, where there is no access to real data.
-Despite this, there should be a way to restrict which databases and collections can be
-accessed with this service through configuration, and a simple API key (set in config)
-that can be used to authenticate requests.
+Despite this, the services provides a way to restrict which databases and collections
+can be accessed with this service through configuration, and a simple API key
+(set in config) that can be used to authenticate requests.
 
 
 ## Installation
@@ -328,7 +328,7 @@ Branch isolation is achieved in shared state technologies by the use of prefixes
 for example, database names.
 The `db_prefix` and `topic_prefix` config values are used so the prefixes must only be
 specified once. They are applied to database and topic names automatically throughout
-the SMS instance.
+the SMS instance, establishing another means to restrict access.
 
 
 ## Development

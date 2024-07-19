@@ -13,4 +13,4 @@ Branch isolation is achieved in shared state technologies by the use of prefixes
 for example, database names.
 The `db_prefix` and `topic_prefix` config values are used so the prefixes must only be
 specified once. They are applied to database and topic names automatically throughout
-the SMS instance.
+the SMS instance, establishing another means to restrict access.

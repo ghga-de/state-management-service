@@ -4,6 +4,6 @@ and the Hashicorp Vault.
 
 This service should **never** be deployed to production. It is *only* intended for use
 in the Testing and Staging environments, where there is no access to real data.
-Despite this, there should be a way to restrict which databases and collections can be
-accessed with this service through configuration, and a simple API key (set in config)
-that can be used to authenticate requests.
+Despite this, the services provides a way to restrict which databases and collections
+can be accessed with this service through configuration, and a simple API key
+(set in config) that can be used to authenticate requests.
