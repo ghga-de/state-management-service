@@ -129,9 +129,10 @@ async def test_permissions_retrieval():
         assert response.json() == DEFAULT_TEST_CONFIG.db_permissions
 
 
-async def test_incorrect_namespace():
-    """Test for error when supplying a namespace with the wrong format (no period)"""
-    bad_namespace_url = "/documents/test"
+@pytest.mark.parametrize("namespace", ["...", "..x", "x..", "x..y"])
+async def test_incorrect_namespace(namespace: str):
+    """Test for error when supplying a namespace with the wrong format"""
+    bad_namespace_url = f"/documents/{namespace}"
     error_code = 422
     async with get_rest_client(DEFAULT_TEST_CONFIG, DummyDocsHandler()) as client:
         response = await client.get(

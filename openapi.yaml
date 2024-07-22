@@ -92,7 +92,7 @@ paths:
           description: 'The database and collection to query. Format: db_name.collection'
           examples:
           - my_test_db.users
-          pattern: '[^\.]+\.[^\.]+'
+          pattern: '[^.]+\.[^.]+'
           title: Namespace
           type: string
       responses:
@@ -122,7 +122,7 @@ paths:
           description: 'The database and collection to query. Format: db_name.collection'
           examples:
           - my_test_db.users
-          pattern: '[^\.]+\.[^\.]+'
+          pattern: '[^.]+\.[^.]+'
           title: Namespace
           type: string
       responses:
@@ -160,7 +160,7 @@ paths:
           description: 'The database and collection to query. Format: db_name.collection'
           examples:
           - my_test_db.users
-          pattern: '[^\.]+\.[^\.]+'
+          pattern: '[^.]+\.[^.]+'
           title: Namespace
           type: string
       requestBody:
