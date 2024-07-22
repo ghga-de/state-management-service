@@ -32,51 +32,51 @@ async def test_all_ops(mongodb: MongoDbFixture):
     config = get_config(sources=[mongodb.config])
 
     # Verify the db is empty
-    docs_dao = DocsDao(config=config)
-    initial_contents = await docs_dao.get(
-        db_name=TESTDB, collection=ALLOPS, criteria={}
-    )
-    assert not initial_contents
+    async with DocsDao(config=config) as docs_dao:
+        initial_contents = await docs_dao.get(
+            db_name=TESTDB, collection=ALLOPS, criteria={}
+        )
+        assert not initial_contents
 
-    # Insert docs
-    docs_to_insert: list[DocumentType] = [
-        {"_id": "1", "test": "test"},
-        {"_id": "2", "test": "second"},
-        {"_id": "3", "test": "third"},
-    ]
-    await docs_dao.upsert(
-        db_name=TESTDB,
-        collection=ALLOPS,
-        id_field="_id",
-        documents=docs_to_insert,
-    )
+        # Insert docs
+        docs_to_insert: list[DocumentType] = [
+            {"_id": "1", "test": "test"},
+            {"_id": "2", "test": "second"},
+            {"_id": "3", "test": "third"},
+        ]
+        await docs_dao.upsert(
+            db_name=TESTDB,
+            collection=ALLOPS,
+            id_field="_id",
+            documents=docs_to_insert,
+        )
 
-    # Check that docs are there
-    post_insert = await docs_dao.get(db_name=TESTDB, collection=ALLOPS, criteria={})
-    assert post_insert == docs_to_insert
+        # Check that docs are there
+        post_insert = await docs_dao.get(db_name=TESTDB, collection=ALLOPS, criteria={})
+        assert post_insert == docs_to_insert
 
-    # Update docs
-    doc_to_update = {"_id": "1", "test": "updated"}
-    await docs_dao.upsert(
-        db_name=TESTDB,
-        collection=ALLOPS,
-        id_field="_id",
-        documents=[doc_to_update],
-    )
+        # Update docs
+        doc_to_update = {"_id": "1", "test": "updated"}
+        await docs_dao.upsert(
+            db_name=TESTDB,
+            collection=ALLOPS,
+            id_field="_id",
+            documents=[doc_to_update],
+        )
 
-    # Check that docs are updated
-    post_update = await docs_dao.get(db_name=TESTDB, collection=ALLOPS, criteria={})
-    docs_to_insert[0] = doc_to_update
-    assert post_update == docs_to_insert
+        # Check that docs are updated
+        post_update = await docs_dao.get(db_name=TESTDB, collection=ALLOPS, criteria={})
+        docs_to_insert[0] = doc_to_update
+        assert post_update == docs_to_insert
 
-    # Delete first doc
-    await docs_dao.delete(db_name=TESTDB, collection=ALLOPS, criteria={"_id": "3"})
-    docs_to_insert.pop()
+        # Delete first doc
+        await docs_dao.delete(db_name=TESTDB, collection=ALLOPS, criteria={"_id": "3"})
+        docs_to_insert.pop()
 
-    # Check that other docs still remain
-    remaining = await docs_dao.get(db_name=TESTDB, collection=ALLOPS, criteria={})
-    assert remaining == docs_to_insert
+        # Check that other docs still remain
+        remaining = await docs_dao.get(db_name=TESTDB, collection=ALLOPS, criteria={})
+        assert remaining == docs_to_insert
 
-    # Delete all docs
-    await docs_dao.delete(db_name=TESTDB, collection=ALLOPS, criteria={})
-    assert not await docs_dao.get(db_name=TESTDB, collection=ALLOPS, criteria={})
+        # Delete all docs
+        await docs_dao.delete(db_name=TESTDB, collection=ALLOPS, criteria={})
+        assert not await docs_dao.get(db_name=TESTDB, collection=ALLOPS, criteria={})
