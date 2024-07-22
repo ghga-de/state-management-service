@@ -138,8 +138,8 @@ class DocsHandler(DocsHandlerPort):
                 db_name=full_db_name, collection=collection, criteria=parsed_criteria
             )
         except Exception as err:
-            error = self.OperationError()
-            logging.error(error, extra={"criteria": criteria, "operation": "get"})
+            error = self.ReadOperationError(criteria=criteria)
+            logging.error(error)
             raise error from err
 
         return results
@@ -185,14 +185,10 @@ class DocsHandler(DocsHandlerPort):
                 documents=documents,
             )
         except Exception as err:
-            error = self.OperationError()
+            error = self.UpsertionError(id_field=id_field)
             logging.error(
                 error,
-                extra={
-                    "id_field": id_field,
-                    "documents": documents,
-                    "operation": "upsert",
-                },
+                extra={"documents": documents},
             )
             raise error from err
 
@@ -220,6 +216,6 @@ class DocsHandler(DocsHandlerPort):
                 db_name=full_db_name, collection=collection, criteria=parsed_criteria
             )
         except Exception as err:
-            error = self.OperationError()
-            logging.error(error, extra={"criteria": criteria, "operation": "delete"})
+            error = self.DeletionError(criteria=criteria)
+            logging.error(error)
             raise error from err

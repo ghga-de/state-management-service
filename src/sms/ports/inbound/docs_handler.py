@@ -31,8 +31,23 @@ class DocsHandlerPort(ABC):
     class OperationError(RuntimeError):
         """Raised when a database operation fails."""
 
-        def __init__(self):
-            super().__init__("The database operation failed.")
+    class ReadOperationError(OperationError):
+        """Raised when a read (get) operation fails."""
+
+        def __init__(self, *, criteria: Criteria):
+            super().__init__(f"The DB read failed. Criteria used: {criteria}.")
+
+    class UpsertionError(OperationError):
+        """Raised when an upsert operation fails."""
+
+        def __init__(self, *, id_field: str):
+            super().__init__(f"The DB upsertion failed. id_field used: '{id_field}'.")
+
+    class DeletionError(OperationError):
+        """Raised when a deletion operation fails."""
+
+        def __init__(self, *, criteria: Criteria):
+            super().__init__(f"The DB deletion failed. Criteria used: {criteria}.")
 
     class CriteriaFormatError(RuntimeError):
         """Raised when the criteria format is invalid."""
