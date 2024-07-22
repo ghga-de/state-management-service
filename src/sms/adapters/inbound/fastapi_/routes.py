@@ -33,7 +33,7 @@ from sms.ports.inbound.docs_handler import DocsHandlerPort
 router = APIRouter()
 
 NAMESPACE_PARAM = Path(
-    pattern=r"[^.]+\.[^.]+",
+    pattern=r"(?<db>[^./ "$]{1-64})\.(?<collection>[^$]{1-255})",
     examples=["my_test_db.users"],
     description="The database and collection to query. Format: db_name.collection",
 )
