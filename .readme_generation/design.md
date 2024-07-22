@@ -4,7 +4,7 @@ For each technology, REST API endpoints will be exposed, prefixed as follows:
 
 | **Technology Name** | **Prefix**  |
 |---------------------|-------------|
-| MongoDB             | `/docs/`    |
+| MongoDB             | `/documents/`|
 | Apache Kafka        | `/events/`  |
 | S3                  | `/objects/` |
 | Vault               | `/secrets/` |

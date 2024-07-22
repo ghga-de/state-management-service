@@ -60,10 +60,10 @@ info:
   version: 1.0.0
 openapi: 3.1.0
 paths:
-  /docs/permissions:
+  /documents/permissions:
     get:
       description: Returns the configured db permissions list.
-      operationId: get_configured_permissions_docs_permissions_get
+      operationId: get_configured_permissions_documents_permissions_get
       responses:
         '200':
           content:
@@ -71,18 +71,18 @@ paths:
               schema:
                 items:
                   type: string
-                title: Response Get Configured Permissions Docs Permissions Get
+                title: Response Get Configured Permissions Documents Permissions Get
                 type: array
           description: Successful Response
       summary: Returns the configured db permissions list.
       tags:
       - StateManagementService
       - sms-mongodb
-  /docs/{db_name}/{collection}:
+  /documents/{db_name}/{collection}:
     delete:
       description: Upserts the document(s) provided in the request body in the specified
         collection.
-      operationId: delete_docs_docs__db_name___collection__delete
+      operationId: delete_docs_documents__db_name___collection__delete
       parameters:
       - in: path
         name: db_name
@@ -113,7 +113,7 @@ paths:
       - sms-mongodb
     get:
       description: Returns all or some documents from the specified collection.
-      operationId: get_docs_docs__db_name___collection__get
+      operationId: get_docs_documents__db_name___collection__get
       parameters:
       - in: path
         name: db_name
@@ -134,7 +134,7 @@ paths:
               schema:
                 items:
                   type: object
-                title: Response Get Docs Docs  Db Name   Collection  Get
+                title: Response Get Docs Documents  Db Name   Collection  Get
                 type: array
           description: Successful Response
         '422':
@@ -152,7 +152,7 @@ paths:
     put:
       description: Upserts the document(s) provided in the request body in the specified
         collection.
-      operationId: upsert_docs_docs__db_name___collection__put
+      operationId: upsert_docs_documents__db_name___collection__put
       parameters:
       - in: path
         name: db_name

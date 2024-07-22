@@ -67,13 +67,13 @@ async def test_get_docs(
         AsyncTestClient(app=app) as client,
     ):
         await client.put(
-            f"/docs/{TEST_DB}/{ALLOPS}",
+            f"/documents/{TEST_DB}/{ALLOPS}",
             headers={"Authorization": VALID_BEARER_TOKEN},
             json={"documents": ALL_TEST_DOCS},
         )
 
         response = await client.get(
-            f"/docs/{TEST_DB}/{ALLOPS}{query_params}",
+            f"/documents/{TEST_DB}/{ALLOPS}{query_params}",
             headers={"Authorization": VALID_BEARER_TOKEN},
         )
         assert response.status_code == 200
@@ -107,7 +107,7 @@ async def test_invalid_criteria(http_method: str, criteria: str, error_text: str
     ):
         method_to_call = getattr(client, http_method)
         response = await method_to_call(
-            f"/docs/{TEST_DB}/{ALLOPS}{criteria}",
+            f"/documents/{TEST_DB}/{ALLOPS}{criteria}",
             headers={"Authorization": VALID_BEARER_TOKEN},
         )
         assert response.status_code == 422
@@ -134,7 +134,7 @@ async def test_get_docs_permission_error(http_method: str):
             {"json": {"documents": {}}} if http_method == "put" else {}
         )
         response = await method_to_call(
-            "/docs/unlisted/unlisted",
+            "/documents/unlisted/unlisted",
             headers={"Authorization": VALID_BEARER_TOKEN},
             **put_args,
         )

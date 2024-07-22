@@ -45,7 +45,7 @@ async def health():
 
 
 @router.get(
-    "/docs/permissions",
+    "/documents/permissions",
     tags=["StateManagementService", "sms-mongodb"],
     summary="Returns the configured db permissions list.",
     status_code=200,
@@ -75,7 +75,7 @@ def _check_for_multiple_query_params(query_params: QueryParams):
 
 
 @router.get(
-    "/docs/{db_name}/{collection}",
+    "/documents/{db_name}/{collection}",
     tags=["StateManagementService", "sms-mongodb"],
     summary="Returns all or some documents from the specified collection.",
     status_code=status.HTTP_200_OK,
@@ -118,7 +118,7 @@ async def get_docs(
 
 
 @router.put(
-    "/docs/{db_name}/{collection}",
+    "/documents/{db_name}/{collection}",
     tags=["StateManagementService", "sms-mongodb"],
     summary=(
         "Upserts the document(s) provided in the request body in the"
@@ -158,7 +158,7 @@ async def upsert_docs(
 
 
 @router.delete(
-    "/docs/{db_name}/{collection}",
+    "/documents/{db_name}/{collection}",
     tags=["StateManagementService", "sms-mongodb"],
     summary="Deletes all or some documents in the collection.",
     status_code=status.HTTP_204_NO_CONTENT,
