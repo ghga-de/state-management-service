@@ -16,7 +16,6 @@
 
 import json
 import logging
-from re import split
 from typing import Literal, NamedTuple
 
 from sms.config import Config
@@ -58,9 +57,11 @@ class Permissions:
         """Set up the permissions parser. Permissions should already by validated by
         the config model.
         """
-        self.permissions = [
-            Permission(*split(r"\.(.*?):", permission)) for permission in permissions
-        ]
+        self.permissions = []
+        for permission in permissions:
+            namespace, ops = permission.rsplit(":")
+            database, collection = namespace.split(".", 1)
+            self.permissions.append(Permission(database, collection, ops))
 
     def get_permissions(self, db_name, collection_name) -> str:
         """List the operations allowed on the specified collection."""
@@ -74,17 +75,15 @@ class Permissions:
 
     def can_write(self, db_name: str, collection_name: str) -> bool:
         """Check if WRITE operations are allowed on the specified collection."""
-        permissions = self.get_permissions(db_name, collection_name)
-        return "w" in permissions
+        return "w" in self.get_permissions(db_name, collection_name)
 
     def can_read(self, db_name: str, collection_name: str) -> bool:
         """Check if READ operations are allowed on the specified collection."""
-        permissions = self.get_permissions(db_name, collection_name)
-        return "r" in permissions
+        return "r" in self.get_permissions(db_name, collection_name)
 
 
 class DocsHandler(DocsHandlerPort):
-    """Concrete implementation of a Doc Handler"""
+    """Concrete implementation of a MongoDB Document Handler"""
 
     def __init__(self, *, config: Config, docs_dao: DocsDaoPort):
         self._prefix = config.db_prefix
