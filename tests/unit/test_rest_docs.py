@@ -55,7 +55,7 @@ class DummyDocsHandler(DocsHandlerPort):
     def __init__(self):
         self.calls = []
 
-    async def get(self, db_name: str, collection: str, criteria: Mapping[str, Any]):
+    async def get(self, db_name: str, collection: str, criteria: Criteria):
         """Dummy get implementation. It records the call and returns an empty list.
 
         Optionally, it raises a PermissionError if the collection is named "permission_error".
@@ -88,7 +88,7 @@ class DummyDocsHandler(DocsHandlerPort):
         if collection == "permission_error":
             raise PermissionError()
 
-    async def delete(self, db_name: str, collection: str, criteria: Mapping[str, Any]):
+    async def delete(self, db_name: str, collection: str, criteria: Criteria):
         """Dummy delete implementation. It records the call.
 
         Optionally, it raises a PermissionError if the collection is named "permission_error".

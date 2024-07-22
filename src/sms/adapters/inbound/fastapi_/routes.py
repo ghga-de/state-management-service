@@ -19,6 +19,7 @@ from collections.abc import Mapping
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Request, status
+from fastapi.datastructures import QueryParams
 from fastapi.exceptions import HTTPException
 
 from sms.adapters.inbound.fastapi_ import dummies
@@ -56,6 +57,23 @@ async def get_configured_permissions(
     return config.db_permissions or []
 
 
+def _check_for_multiple_query_params(query_params: QueryParams):
+    """Inspect query parameters and raise an exception if any have multiple values."""
+    # Sort both values and keys to ensure consistent error messages for tests
+    multiples = [
+        (k, sorted(query_params.getlist(k)))
+        for k in query_params
+        if len(query_params.getlist(k)) > 1
+    ]
+    multiples.sort(key=lambda tup: tup[0])
+
+    if multiples:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Only one value per query parameter is allowed: {multiples}",
+        )
+
+
 @router.get(
     "/docs/{db_name}/{collection}",
     tags=["StateManagementService", "sms-mongodb"],
@@ -71,13 +89,15 @@ async def get_docs(
     _token: Annotated[TokenAuthContext, require_token],
 ) -> list[Mapping[str, Any]]:
     """Returns all or some documents from the specified collection."""
-    query_params: Criteria = dict(request.query_params)
+    query_params: Criteria = request.query_params
+
+    _check_for_multiple_query_params(query_params)
 
     try:
         results = await docs_handler.get(
             db_name=db_name,
             collection=collection,
-            criteria=query_params,
+            criteria=dict(query_params),
         )
         return results
     except PermissionError as err:
@@ -151,13 +171,15 @@ async def delete_docs(
     _token: Annotated[TokenAuthContext, require_token],
 ):
     """Upserts the document(s) provided in the request body in the specified collection."""
-    query_params: Criteria = dict(request.query_params)
+    query_params: Criteria = request.query_params
+
+    _check_for_multiple_query_params(query_params)
 
     try:
         await docs_handler.delete(
             db_name=db_name,
             collection=collection,
-            criteria=query_params,
+            criteria=dict(query_params),
         )
     except PermissionError as err:
         raise HTTPException(

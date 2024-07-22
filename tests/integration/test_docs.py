@@ -84,11 +84,23 @@ async def test_get_docs(
         assert data == expected_results
 
 
+@pytest.mark.parametrize(
+    "criteria, error_text",
+    [
+        (
+            "?age={unquoted_key:53}",
+            "Check query parameters: The value for key 'age' is invalid.",
+        ),
+        (
+            "?age=34&age=33",
+            "Only one value per query parameter is allowed: [('age', ['33', '34'])]",
+        ),
+    ],
+)
 @pytest.mark.parametrize("http_method", ["get", "delete"])
-async def test_invalid_criteria(http_method: str):
+async def test_invalid_criteria(http_method: str, criteria: str, error_text: str):
     """Test the handling of invalid criteria."""
     config = get_config()
-    criteria = "?age={unquoted_key:53}"
     async with (
         prepare_rest_app(config=config) as app,
         AsyncTestClient(app=app) as client,
@@ -99,9 +111,7 @@ async def test_invalid_criteria(http_method: str):
             headers={"Authorization": VALID_BEARER_TOKEN},
         )
         assert response.status_code == 422
-        assert response.json() == {
-            "detail": "Check query parameters: The value for key 'age' is invalid."
-        }
+        assert response.json() == {"detail": error_text}
 
 
 @pytest.mark.parametrize("http_method", ["get", "put", "delete"])
