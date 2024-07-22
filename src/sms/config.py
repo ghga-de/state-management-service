@@ -71,23 +71,31 @@ class SmsConfig(BaseSettings):
     @field_validator("db_permissions")
     @classmethod
     def validate_permissions(cls, value):
-        """Validate the permissions to make sure only 'r', 'w', 'rw', and '*' are used."""
+        """Validate the permissions to make sure only 'r', 'w', 'rw', and '*' are used.
+
+        Rules are normalized by unpacking '*' into 'rw'.
+        """
         if value is None:
             return value
-        for perm in value:
-            parts = perm.split(".")
+
+        normalized_rules: list[str] = []
+        for permission in value:
+            parts = permission.split(".")
             if len(parts) != 3:
                 raise ValueError(
-                    f"Invalid permission '{perm}'."
+                    f"Invalid permission '{permission}'."
                     + " Must have exactly two periods ('.') in it."
                 )
             ops = parts[2]
             if ops not in ("r", "w", "rw", "*"):
                 raise ValueError(
-                    f"Invalid permission '{ops}' in '{perm}'."
+                    f"Invalid permission '{ops}' in '{permission}'."
                     + " Only 'r', 'w', 'rw', and '*' are allowed."
                 )
-        return value
+            if ops == "*":
+                parts[2] = "rw"
+            normalized_rules.append(".".join(parts))
+        return normalized_rules
 
 
 @config_from_yaml(prefix=SERVICE_NAME)

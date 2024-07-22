@@ -81,14 +81,15 @@ def test_criteria_format_error(query_params: Criteria):
 def test_permissions():
     """Test the Permissions class."""
     config = get_config()
-    permissions = Permissions(config.db_permissions or [])
+    permissions = Permissions(config.db_permissions)
 
-    assert permissions.get_permissions(TEST_DB, ALLOPS) == "*"
+    assert permissions.get_permissions(TEST_DB, ALLOPS) == "rw"
     assert permissions.get_permissions(TEST_DB, READONLY) == "r"
     assert permissions.get_permissions(TEST_DB, WRITEONLY) == "w"
     assert permissions.get_permissions(TEST_DB, READWRITE) == "rw"
     assert permissions.get_permissions(TEST_DB, UNLISTED_COLLECTION) == ""
     assert permissions.get_permissions(UNLISTED_DB, "all") == ""
+    assert Permissions([]).get_permissions(TEST_DB, ALLOPS) == ""
 
 
 @pytest.mark.parametrize(

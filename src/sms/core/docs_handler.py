@@ -54,6 +54,9 @@ class Permissions:
     permissions: list[Permission]
 
     def __init__(self, permissions: list[str]):
+        """Set up the permissions parser. Permissions should already by validated by
+        the config model.
+        """
         self.permissions = [
             Permission(*permission.split(".")) for permission in permissions
         ]
@@ -71,12 +74,12 @@ class Permissions:
     def can_write(self, db_name: str, collection_name: str) -> bool:
         """Check if WRITE operations are allowed on the specified collection."""
         permissions = self.get_permissions(db_name, collection_name)
-        return "w" in permissions or "*" in permissions
+        return "w" in permissions
 
     def can_read(self, db_name: str, collection_name: str) -> bool:
         """Check if READ operations are allowed on the specified collection."""
         permissions = self.get_permissions(db_name, collection_name)
-        return "r" in permissions or "*" in permissions
+        return "r" in permissions
 
 
 class DocsHandler(DocsHandlerPort):
@@ -84,7 +87,7 @@ class DocsHandler(DocsHandlerPort):
 
     def __init__(self, *, config: Config, docs_dao: DocsDaoPort):
         self._prefix = config.db_prefix
-        self._permissions = Permissions(permissions=config.db_permissions or [])
+        self._permissions = Permissions(permissions=config.db_permissions)
         self._docs_dao = docs_dao
 
     def _parse_criteria(self, criteria: Criteria) -> Criteria:
