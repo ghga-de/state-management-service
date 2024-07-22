@@ -119,7 +119,7 @@ async def test_get_docs_permission_error(http_method: str):
     """Test the handling of a PermissionError."""
     config = get_config()
     op_name = "read" if http_method == "get" else "write"
-    rule = f"unlisted.unlisted.{op_name[0]}"
+    rule = f"unlisted.unlisted:{op_name[0]}"
 
     message = (
         f"'{op_name.title()}' operations not allowed on db 'unlisted',"

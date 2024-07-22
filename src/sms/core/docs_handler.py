@@ -16,6 +16,7 @@
 
 import json
 import logging
+from re import split
 from typing import Literal, NamedTuple
 
 from sms.config import Config
@@ -28,7 +29,7 @@ def log_and_raise_permissions_error(
     db_name: str, collection: str, operation: Literal["read", "write"]
 ):
     """Log and raise a PermissionError."""
-    rule = f"{db_name}.{collection}.{operation[0]}"
+    rule = f"{db_name}.{collection}:{operation[0]}"
     error = PermissionError(
         f"'{operation.title()}' operations not allowed on db '{db_name}',"
         + f" collection '{collection}'. No rule found that matches '{rule}'",
@@ -58,7 +59,7 @@ class Permissions:
         the config model.
         """
         self.permissions = [
-            Permission(*permission.split(".")) for permission in permissions
+            Permission(*split(r"\.(.*?):", permission)) for permission in permissions
         ]
 
     def get_permissions(self, db_name, collection_name) -> str:

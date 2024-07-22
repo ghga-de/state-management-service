@@ -15,6 +15,8 @@
 
 """Config Parameter Modeling and Parsing."""
 
+from re import split
+
 from ghga_service_commons.api import ApiConfigBase
 from hexkit.config import config_from_yaml
 from hexkit.log import LoggingConfig
@@ -42,20 +44,21 @@ class SmsConfig(BaseSettings):
         default=[],
         description=(
             "List of permissions that can be granted on a collection. Use * to signify"
-            + " 'all'. The format is '<db_name>.<collection_name>.<permissions>', e.g."
+            + " 'all'. The format is '<db_name>.<collection_name>:<permissions>', e.g."
             + " 'db1.collection1.crud'. The permissions are 'r' for read and 'w' for"
-            + " write. Deletion is a write operation. If db_permissions are not set, no"
+            + " write. '*' can be used to mean both read and write (or 'rw')."
+            + " Deletion is a write operation. If db_permissions are not set, no"
             + " operations are allowed on any database or collection."
         ),
         examples=[
-            "db1.coll1.r",
-            "db1.coll1.w",
-            "db1.coll1.rw",
-            "db1.coll1.*",
-            "db2.*.r",
-            "db3.*.*",
-            "*.*.r",
-            "*.*.*",
+            "db1.coll1:r",
+            "db1.coll1:w",
+            "db1.coll1:rw",
+            "db1.coll1:*",
+            "db2.*:r",
+            "db3.*:*",
+            "*.*:r",
+            "*.*:*",
         ],
     )
     db_connection_str: SecretStr = Field(
@@ -80,21 +83,19 @@ class SmsConfig(BaseSettings):
 
         normalized_rules: list[str] = []
         for permission in value:
-            parts = permission.split(".")
-            if len(parts) != 3:
+            db_name, collection, ops = split(r"\.(.*?):", permission)
+            if not (db_name and collection and ops):
                 raise ValueError(
                     f"Invalid permission '{permission}'."
-                    + " Must have exactly two periods ('.') in it."
+                    + " Must have the format <db>.<collection>:<permissions>'."
                 )
-            ops = parts[2]
-            if ops not in ("r", "w", "rw", "*"):
+            ops = "rw" if ops == "*" else ops
+            if ops not in ("r", "w", "rw"):
                 raise ValueError(
                     f"Invalid permission '{ops}' in '{permission}'."
                     + " Only 'r', 'w', 'rw', and '*' are allowed."
                 )
-            if ops == "*":
-                parts[2] = "rw"
-            normalized_rules.append(".".join(parts))
+            normalized_rules.append(f"{db_name}.{collection}:{ops}")
         return normalized_rules
 
 

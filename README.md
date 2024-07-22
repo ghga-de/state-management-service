@@ -77,7 +77,7 @@ The service requires the following configuration parameters:
   ```
 
 
-- **`db_permissions`** *(array)*: List of permissions that can be granted on a collection. Use * to signify 'all'. The format is '<db_name>.<collection_name>.<permissions>', e.g. 'db1.collection1.crud'. The permissions are 'r' for read and 'w' for write. Deletion is a write operation. If db_permissions are not set, no operations are allowed on any database or collection. Default: `[]`.
+- **`db_permissions`** *(array)*: List of permissions that can be granted on a collection. Use * to signify 'all'. The format is '<db_name>.<collection_name>:<permissions>', e.g. 'db1.collection1.crud'. The permissions are 'r' for read and 'w' for write. '*' can be used to mean both read and write (or 'rw'). Deletion is a write operation. If db_permissions are not set, no operations are allowed on any database or collection. Default: `[]`.
 
   - **Items** *(string)*
 
@@ -85,42 +85,42 @@ The service requires the following configuration parameters:
   Examples:
 
   ```json
-  "db1.coll1.r"
+  "db1.coll1:r"
   ```
 
 
   ```json
-  "db1.coll1.w"
+  "db1.coll1:w"
   ```
 
 
   ```json
-  "db1.coll1.rw"
+  "db1.coll1:rw"
   ```
 
 
   ```json
-  "db1.coll1.*"
+  "db1.coll1:*"
   ```
 
 
   ```json
-  "db2.*.r"
+  "db2.*:r"
   ```
 
 
   ```json
-  "db3.*.*"
+  "db3.*:*"
   ```
 
 
   ```json
-  "*.*.r"
+  "*.*:r"
   ```
 
 
   ```json
-  "*.*.*"
+  "*.*:*"
   ```
 
 

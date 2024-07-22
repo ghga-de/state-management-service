@@ -6,7 +6,7 @@ cors_allowed_methods: null
 cors_allowed_origins: null
 db_connection_str: '**********'
 db_permissions:
-- '*.*.*'
+- '*.*:rw'
 db_prefix: test_
 docs_url: /docs
 generate_correlation_id: true
