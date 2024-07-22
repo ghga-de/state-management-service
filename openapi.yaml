@@ -78,23 +78,22 @@ paths:
       tags:
       - StateManagementService
       - sms-mongodb
-  /documents/{db_name}/{collection}:
+  /documents/{namespace}:
     delete:
       description: Upserts the document(s) provided in the request body in the specified
         collection.
-      operationId: delete_docs_documents__db_name___collection__delete
+      operationId: delete_docs_documents__namespace__delete
       parameters:
-      - in: path
-        name: db_name
+      - description: 'The database and collection to query. Format: db_name.collection'
+        in: path
+        name: namespace
         required: true
         schema:
-          title: Db Name
-          type: string
-      - in: path
-        name: collection
-        required: true
-        schema:
-          title: Collection
+          description: 'The database and collection to query. Format: db_name.collection'
+          examples:
+          - my_test_db.users
+          pattern: '[^\.]+\.[^\.]+'
+          title: Namespace
           type: string
       responses:
         '204':
@@ -113,19 +112,18 @@ paths:
       - sms-mongodb
     get:
       description: Returns all or some documents from the specified collection.
-      operationId: get_docs_documents__db_name___collection__get
+      operationId: get_docs_documents__namespace__get
       parameters:
-      - in: path
-        name: db_name
+      - description: 'The database and collection to query. Format: db_name.collection'
+        in: path
+        name: namespace
         required: true
         schema:
-          title: Db Name
-          type: string
-      - in: path
-        name: collection
-        required: true
-        schema:
-          title: Collection
+          description: 'The database and collection to query. Format: db_name.collection'
+          examples:
+          - my_test_db.users
+          pattern: '[^\.]+\.[^\.]+'
+          title: Namespace
           type: string
       responses:
         '200':
@@ -134,7 +132,7 @@ paths:
               schema:
                 items:
                   type: object
-                title: Response Get Docs Documents  Db Name   Collection  Get
+                title: Response Get Docs Documents  Namespace  Get
                 type: array
           description: Successful Response
         '422':
@@ -152,19 +150,18 @@ paths:
     put:
       description: Upserts the document(s) provided in the request body in the specified
         collection.
-      operationId: upsert_docs_documents__db_name___collection__put
+      operationId: upsert_docs_documents__namespace__put
       parameters:
-      - in: path
-        name: db_name
+      - description: 'The database and collection to query. Format: db_name.collection'
+        in: path
+        name: namespace
         required: true
         schema:
-          title: Db Name
-          type: string
-      - in: path
-        name: collection
-        required: true
-        schema:
-          title: Collection
+          description: 'The database and collection to query. Format: db_name.collection'
+          examples:
+          - my_test_db.users
+          pattern: '[^\.]+\.[^\.]+'
+          title: Namespace
           type: string
       requestBody:
         content:

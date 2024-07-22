@@ -28,8 +28,7 @@ from tests.fixtures.config import get_config
 pytestmark = pytest.mark.asyncio
 
 VALID_BEARER_TOKEN = "Bearer 43fadc91-b98f-4925-bd31-1b054b13dc55"
-TEST_DB = "testdb"
-ALLOPS = "allops"
+ALLOPS = "testdb.allops"
 
 SALLY: DocumentType = {"_id": 1, "name": "sally", "age": 23}
 EZEKIEL: DocumentType = {"_id": 2, "name": "ezekiel", "age": 53}
@@ -67,13 +66,13 @@ async def test_get_docs(
         AsyncTestClient(app=app) as client,
     ):
         await client.put(
-            f"/documents/{TEST_DB}/{ALLOPS}",
+            f"/documents/{ALLOPS}",
             headers={"Authorization": VALID_BEARER_TOKEN},
             json={"documents": ALL_TEST_DOCS},
         )
 
         response = await client.get(
-            f"/documents/{TEST_DB}/{ALLOPS}{query_params}",
+            f"/documents/{ALLOPS}{query_params}",
             headers={"Authorization": VALID_BEARER_TOKEN},
         )
         assert response.status_code == 200
@@ -107,7 +106,7 @@ async def test_invalid_criteria(http_method: str, criteria: str, error_text: str
     ):
         method_to_call = getattr(client, http_method)
         response = await method_to_call(
-            f"/documents/{TEST_DB}/{ALLOPS}{criteria}",
+            f"/documents/{ALLOPS}{criteria}",
             headers={"Authorization": VALID_BEARER_TOKEN},
         )
         assert response.status_code == 422
@@ -134,7 +133,7 @@ async def test_get_docs_permission_error(http_method: str):
             {"json": {"documents": {}}} if http_method == "put" else {}
         )
         response = await method_to_call(
-            "/documents/unlisted/unlisted",
+            "/documents/unlisted.unlisted",
             headers={"Authorization": VALID_BEARER_TOKEN},
             **put_args,
         )

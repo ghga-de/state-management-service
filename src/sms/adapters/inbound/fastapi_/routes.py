@@ -18,7 +18,7 @@
 from collections.abc import Mapping
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Request, status
+from fastapi import APIRouter, Path, Request, status
 from fastapi.datastructures import QueryParams
 from fastapi.exceptions import HTTPException
 
@@ -31,6 +31,12 @@ from sms.models import DocumentType, UpsertionDetails
 from sms.ports.inbound.docs_handler import DocsHandlerPort
 
 router = APIRouter()
+
+NAMESPACE_PARAM = Path(
+    pattern=r"[^\.]+\.[^\.]+",
+    examples=["my_test_db.users"],
+    description="The database and collection to query. Format: db_name.collection",
+)
 
 
 @router.get(
@@ -75,15 +81,14 @@ def _check_for_multiple_query_params(query_params: QueryParams):
 
 
 @router.get(
-    "/documents/{db_name}/{collection}",
+    "/documents/{namespace}",
     tags=["StateManagementService", "sms-mongodb"],
     summary="Returns all or some documents from the specified collection.",
     status_code=status.HTTP_200_OK,
     response_model=list[DocumentType],
 )
 async def get_docs(
-    db_name: str,
-    collection: str,
+    namespace: Annotated[str, NAMESPACE_PARAM],
     request: Request,
     docs_handler: dummies.DocsHandlerPortDummy,
     _token: Annotated[TokenAuthContext, require_token],
@@ -93,6 +98,7 @@ async def get_docs(
 
     _check_for_multiple_query_params(query_params)
 
+    db_name, collection = namespace.split(".", 1)
     try:
         results = await docs_handler.get(
             db_name=db_name,
@@ -118,7 +124,7 @@ async def get_docs(
 
 
 @router.put(
-    "/documents/{db_name}/{collection}",
+    "/documents/{namespace}",
     tags=["StateManagementService", "sms-mongodb"],
     summary=(
         "Upserts the document(s) provided in the request body in the"
@@ -127,13 +133,13 @@ async def get_docs(
     status_code=status.HTTP_204_NO_CONTENT,
 )
 async def upsert_docs(
-    db_name: str,
-    collection: str,
+    namespace: Annotated[str, NAMESPACE_PARAM],
     upsertion_details: UpsertionDetails,
     docs_handler: dummies.DocsHandlerPortDummy,
     _token: Annotated[TokenAuthContext, require_token],
 ):
     """Upserts the document(s) provided in the request body in the specified collection."""
+    db_name, collection = namespace.split(".", 1)
     try:
         await docs_handler.upsert(
             db_name=db_name,
@@ -158,14 +164,13 @@ async def upsert_docs(
 
 
 @router.delete(
-    "/documents/{db_name}/{collection}",
+    "/documents/{namespace}",
     tags=["StateManagementService", "sms-mongodb"],
     summary="Deletes all or some documents in the collection.",
     status_code=status.HTTP_204_NO_CONTENT,
 )
 async def delete_docs(
-    db_name: str,
-    collection: str,
+    namespace: Annotated[str, NAMESPACE_PARAM],
     request: Request,
     docs_handler: dummies.DocsHandlerPortDummy,
     _token: Annotated[TokenAuthContext, require_token],
@@ -175,6 +180,7 @@ async def delete_docs(
 
     _check_for_multiple_query_params(query_params)
 
+    db_name, collection = namespace.split(".", 1)
     try:
         await docs_handler.delete(
             db_name=db_name,

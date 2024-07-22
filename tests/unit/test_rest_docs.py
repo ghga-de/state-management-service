@@ -34,6 +34,8 @@ from tests.fixtures.config import DEFAULT_TEST_CONFIG
 
 pytestmark = pytest.mark.asyncio()
 VALID_BEARER_TOKEN = "Bearer 43fadc91-b98f-4925-bd31-1b054b13dc55"
+TEST_URL = "/documents/testdb.testcollection"
+PERMISSION_ERROR_URL = "/documents/testdb.permission_error"
 
 
 @dataclass
@@ -127,6 +129,31 @@ async def test_permissions_retrieval():
         assert response.json() == DEFAULT_TEST_CONFIG.db_permissions
 
 
+async def test_incorrect_namespace():
+    """Test for error when supplying a namespace with the wrong format (no period)"""
+    bad_namespace_url = "/documents/test"
+    error_code = 422
+    async with get_rest_client(DEFAULT_TEST_CONFIG, DummyDocsHandler()) as client:
+        response = await client.get(
+            bad_namespace_url,
+            headers={"Authorization": VALID_BEARER_TOKEN},
+        )
+        assert response.status_code == error_code
+
+        response = await client.put(
+            bad_namespace_url,
+            headers={"Authorization": VALID_BEARER_TOKEN},
+            json={"documents": []},
+        )
+        assert response.status_code == error_code
+
+        response = await client.delete(
+            bad_namespace_url,
+            headers={"Authorization": VALID_BEARER_TOKEN},
+        )
+        assert response.status_code == error_code
+
+
 @pytest.mark.parametrize(
     "headers",
     [{"Authorization": "Bearer 123"}, {}],
@@ -142,9 +169,7 @@ async def test_unauthenticated_calls(http_method: str, headers: dict[str, str]):
     dummy_docs_handler = DummyDocsHandler()
     async with get_rest_client(DEFAULT_TEST_CONFIG, dummy_docs_handler) as client:
         method_to_call = getattr(client, http_method)
-        response = await method_to_call(
-            "/documents/testdb/testcollection", headers=headers
-        )
+        response = await method_to_call(TEST_URL, headers=headers)
 
     # Verify status code and make sure there were no DAO method calls
     assert response.status_code == 401
@@ -170,7 +195,7 @@ async def test_authenticated_valid_calls(http_method: str, expected_status_code:
             {"json": {"documents": {}}} if http_method == "put" else {}
         )
         response = await method_to_call(
-            url="/documents/testdb/testcollection",
+            url=TEST_URL,
             headers={"Authorization": VALID_BEARER_TOKEN},
             **put_args,
         )
@@ -217,7 +242,7 @@ async def test_calls_with_query_params(
     async with get_rest_client(DEFAULT_TEST_CONFIG, dummy_docs_handler) as client:
         method_to_call = getattr(client, http_method)
         response = await method_to_call(
-            url=f"/documents/testdb/testcollection?{query_string}",
+            url=f"/documents/testdb.testcollection?{query_string}",
             headers={"Authorization": VALID_BEARER_TOKEN},
         )
 
@@ -248,7 +273,7 @@ async def test_permission_errors(
             {"json": {"documents": {}}} if http_method == "put" else {}
         )
         response = await method_to_call(
-            url="/documents/testdb/permission_error",
+            url=PERMISSION_ERROR_URL,
             headers={"Authorization": VALID_BEARER_TOKEN},
             **put_args,
         )
@@ -265,7 +290,7 @@ async def test_put_with_docs():
     upsertion_details = UpsertionDetails(documents=docs_to_insert)
     async with get_rest_client(DEFAULT_TEST_CONFIG, dummy_docs_handler) as client:
         response = await client.put(
-            url="/documents/testdb/testcollection",
+            url=TEST_URL,
             headers={"Authorization": VALID_BEARER_TOKEN},
             json=upsertion_details.model_dump(),
         )
@@ -296,7 +321,7 @@ async def test_put_with_missing_id_field():
         DEFAULT_TEST_CONFIG, docs_handler_override=docs_handler
     ) as client:
         response = await client.put(
-            url="/documents/testdb/allops",
+            url="/documents/testdb.allops",
             headers={"Authorization": VALID_BEARER_TOKEN},
             json=upsertion_details.model_dump(),
         )
@@ -314,20 +339,20 @@ async def test_failed_db_operation():
 
     async with get_rest_client(DEFAULT_TEST_CONFIG, dummy_docs_handler) as client:
         response = await client.get(
-            url="/documents/testdb/permission_error",
+            url=PERMISSION_ERROR_URL,
             headers={"Authorization": VALID_BEARER_TOKEN},
         )
         assert response.status_code == 500
 
         response = await client.put(
-            url="/documents/testdb/permission_error",
+            url=PERMISSION_ERROR_URL,
             headers={"Authorization": VALID_BEARER_TOKEN},
             json=UpsertionDetails(documents={}).model_dump(),
         )
         assert response.status_code == 500
 
         response = await client.delete(
-            url="/documents/testdb/permission_error",
+            url=PERMISSION_ERROR_URL,
             headers={"Authorization": VALID_BEARER_TOKEN},
         )
         assert response.status_code == 500
@@ -344,7 +369,7 @@ async def test_criteria_format_error_handling(http_method: str):
     async with get_rest_client(DEFAULT_TEST_CONFIG, dummy_docs_handler) as client:
         method_to_call = getattr(client, http_method)
         response = await method_to_call(
-            url="/documents/testdb/testcollection",
+            url=TEST_URL,
             headers={"Authorization": VALID_BEARER_TOKEN},
         )
 
