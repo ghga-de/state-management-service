@@ -22,18 +22,7 @@
       "type": "string"
     },
     "db_permissions": {
-      "anyOf": [
-        {
-          "items": {
-            "type": "string"
-          },
-          "type": "array"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "default": null,
+      "default": [],
       "description": "List of permissions that can be granted on a collection. Use * to signify 'all'. The format is '<db_name>.<collection_name>.<permissions>', e.g. 'db1.collection1.crud'. The permissions are 'r' for read and 'w' for write. Deletion is a write operation. If db_permissions are not set, no operations are allowed on any database or collection.",
       "examples": [
         "db1.coll1.r",
@@ -45,7 +34,11 @@
         "*.*.r",
         "*.*.*"
       ],
-      "title": "Db Permissions"
+      "items": {
+        "type": "string"
+      },
+      "title": "Db Permissions",
+      "type": "array"
     },
     "db_connection_str": {
       "description": "MongoDB connection string. Might include credentials. For more information see: https://naiveskill.com/mongodb-connection-string/",

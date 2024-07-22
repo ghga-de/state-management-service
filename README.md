@@ -77,15 +77,9 @@ The service requires the following configuration parameters:
   ```
 
 
-- **`db_permissions`**: List of permissions that can be granted on a collection. Use * to signify 'all'. The format is '<db_name>.<collection_name>.<permissions>', e.g. 'db1.collection1.crud'. The permissions are 'r' for read and 'w' for write. Deletion is a write operation. If db_permissions are not set, no operations are allowed on any database or collection. Default: `null`.
+- **`db_permissions`** *(array)*: List of permissions that can be granted on a collection. Use * to signify 'all'. The format is '<db_name>.<collection_name>.<permissions>', e.g. 'db1.collection1.crud'. The permissions are 'r' for read and 'w' for write. Deletion is a write operation. If db_permissions are not set, no operations are allowed on any database or collection. Default: `[]`.
 
-  - **Any of**
-
-    - *array*
-
-      - **Items** *(string)*
-
-    - *null*
+  - **Items** *(string)*
 
 
   Examples:

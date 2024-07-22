@@ -38,8 +38,8 @@ class SmsConfig(BaseSettings):
         description="Prefix to add to all database names used in the SMS.",
         examples=["testing-branch-name-"],
     )
-    db_permissions: list[str] | None = Field(
-        default=None,
+    db_permissions: list[str] = Field(
+        default=[],
         description=(
             "List of permissions that can be granted on a collection. Use * to signify"
             + " 'all'. The format is '<db_name>.<collection_name>.<permissions>', e.g."

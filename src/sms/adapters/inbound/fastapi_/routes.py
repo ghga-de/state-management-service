@@ -54,7 +54,7 @@ async def get_configured_permissions(
     config: dummies.ConfigDummy,
 ) -> list[str]:
     """Returns the configured db permissions list."""
-    return config.db_permissions or []
+    return config.db_permissions
 
 
 def _check_for_multiple_query_params(query_params: QueryParams):
