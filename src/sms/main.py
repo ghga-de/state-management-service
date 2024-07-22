@@ -12,27 +12,20 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#
 
-"""Used to define the location of the main FastAPI app object."""
+"""REST API configuration entrypoint module."""
 
-from typing import Any
+from ghga_service_commons.api import run_server
+from hexkit.log import configure_logging
 
-from fastapi import FastAPI
-
-from sms.adapters.inbound.fastapi_.configure import get_openapi_schema
-from sms.adapters.inbound.fastapi_.routes import router
-
-app = FastAPI()
-app.include_router(router)
+from sms.config import Config
+from sms.inject import prepare_rest_app
 
 
-def custom_openapi() -> dict[str, Any]:
-    if app.openapi_schema:
-        return app.openapi_schema
-    openapi_schema = get_openapi_schema(app)
-    app.openapi_schema = openapi_schema
-    return openapi_schema
+async def run_rest_app():
+    """Run the REST HTTP API"""
+    config = Config()  # type: ignore
+    configure_logging(config=config)
 
-
-app.openapi = custom_openapi  # type: ignore [method-assign]
+    async with prepare_rest_app(config=config) as app:
+        await run_server(app=app, config=config)
