@@ -27,7 +27,7 @@ from sms.adapters.inbound.fastapi_.http_authorization import (
     TokenAuthContext,
     require_token,
 )
-from sms.models import Criteria, DocumentType, UpsertionDetails
+from sms.models import DocumentType, UpsertionDetails
 from sms.ports.inbound.docs_handler import DocsHandlerPort
 
 router = APIRouter()
@@ -89,7 +89,7 @@ async def get_docs(
     _token: Annotated[TokenAuthContext, require_token],
 ) -> list[Mapping[str, Any]]:
     """Returns all or some documents from the specified collection."""
-    query_params: Criteria = request.query_params
+    query_params: QueryParams = request.query_params
 
     _check_for_multiple_query_params(query_params)
 
@@ -171,7 +171,7 @@ async def delete_docs(
     _token: Annotated[TokenAuthContext, require_token],
 ):
     """Upserts the document(s) provided in the request body in the specified collection."""
-    query_params: Criteria = request.query_params
+    query_params: QueryParams = request.query_params
 
     _check_for_multiple_query_params(query_params)
 
