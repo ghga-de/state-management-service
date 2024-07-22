@@ -41,6 +41,7 @@ NAMESPACE_PARAM = Path(
 
 @router.get(
     "/health",
+    operation_id="health",
     summary="health",
     tags=["StateManagementService", "sms-"],
     status_code=200,
@@ -52,6 +53,7 @@ async def health():
 
 @router.get(
     "/documents/permissions",
+    operation_id="get_db_permissions",
     tags=["StateManagementService", "sms-mongodb"],
     summary="Returns the configured db permissions list.",
     status_code=200,
@@ -82,6 +84,7 @@ def _check_for_multiple_query_params(query_params: QueryParams):
 
 @router.get(
     "/documents/{namespace}",
+    operation_id="get_documents",
     tags=["StateManagementService", "sms-mongodb"],
     summary="Returns all or some documents from the specified collection.",
     status_code=status.HTTP_200_OK,
@@ -125,6 +128,7 @@ async def get_docs(
 
 @router.put(
     "/documents/{namespace}",
+    operation_id="upsert_documents",
     tags=["StateManagementService", "sms-mongodb"],
     summary=(
         "Upserts the document(s) provided in the request body in the"
@@ -165,6 +169,7 @@ async def upsert_docs(
 
 @router.delete(
     "/documents/{namespace}",
+    operation_id="delete_documents",
     tags=["StateManagementService", "sms-mongodb"],
     summary="Deletes all or some documents in the collection.",
     status_code=status.HTTP_204_NO_CONTENT,

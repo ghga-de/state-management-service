@@ -63,7 +63,7 @@ paths:
   /documents/permissions:
     get:
       description: Returns the configured db permissions list.
-      operationId: get_configured_permissions_documents_permissions_get
+      operationId: get_db_permissions
       responses:
         '200':
           content:
@@ -71,7 +71,7 @@ paths:
               schema:
                 items:
                   type: string
-                title: Response Get Configured Permissions Documents Permissions Get
+                title: Response Get Db Permissions
                 type: array
           description: Successful Response
       summary: Returns the configured db permissions list.
@@ -82,7 +82,7 @@ paths:
     delete:
       description: Upserts the document(s) provided in the request body in the specified
         collection.
-      operationId: delete_docs_documents__namespace__delete
+      operationId: delete_documents
       parameters:
       - description: 'The database and collection to query. Format: db_name.collection'
         in: path
@@ -112,7 +112,7 @@ paths:
       - sms-mongodb
     get:
       description: Returns all or some documents from the specified collection.
-      operationId: get_docs_documents__namespace__get
+      operationId: get_documents
       parameters:
       - description: 'The database and collection to query. Format: db_name.collection'
         in: path
@@ -132,7 +132,7 @@ paths:
               schema:
                 items:
                   type: object
-                title: Response Get Docs Documents  Namespace  Get
+                title: Response Get Documents
                 type: array
           description: Successful Response
         '422':
@@ -150,7 +150,7 @@ paths:
     put:
       description: Upserts the document(s) provided in the request body in the specified
         collection.
-      operationId: upsert_docs_documents__namespace__put
+      operationId: upsert_documents
       parameters:
       - description: 'The database and collection to query. Format: db_name.collection'
         in: path
@@ -188,7 +188,7 @@ paths:
   /health:
     get:
       description: Used to test if this service is alive
-      operationId: health_health_get
+      operationId: health
       responses:
         '200':
           content:
