@@ -45,15 +45,16 @@ query_params_open_api: dict[str, Any] = {
         {
             "description": query_params_desc,
             "in": "query",
-            "name": "Criteria",
+            "name": "criteria",
             "required": False,
             "schema": {
                 "description": query_params_desc,
                 "title": "Criteria",
                 "type": "object",
+                "additionalProperties": True,
                 "examples": [
                     '{"name": "John"}',
-                    '{"_id": {"$eq": 1}}',
+                    '{"_id": {"$ne": "507f1f77bcf86cd799439011"}}',
                     '{"age": {"$gt": 21}}',
                 ],
             },

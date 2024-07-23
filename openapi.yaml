@@ -97,14 +97,15 @@ paths:
       - description: Query parameters used to specify the documents affected by the
           request.
         in: query
-        name: Criteria
+        name: criteria
         required: false
         schema:
+          additionalProperties: true
           description: Query parameters used to specify the documents affected by
             the request.
           examples:
           - '{"name": "John"}'
-          - '{"_id": {"$eq": 1}}'
+          - '{"_id": {"$ne": "507f1f77bcf86cd799439011"}}'
           - '{"age": {"$gt": 21}}'
           title: Criteria
           type: object
@@ -141,14 +142,15 @@ paths:
       - description: Query parameters used to specify the documents affected by the
           request.
         in: query
-        name: Criteria
+        name: criteria
         required: false
         schema:
+          additionalProperties: true
           description: Query parameters used to specify the documents affected by
             the request.
           examples:
           - '{"name": "John"}'
-          - '{"_id": {"$eq": 1}}'
+          - '{"_id": {"$ne": "507f1f77bcf86cd799439011"}}'
           - '{"age": {"$gt": 21}}'
           title: Criteria
           type: object
