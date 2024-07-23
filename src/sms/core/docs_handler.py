@@ -219,6 +219,8 @@ class DocsHandler(DocsHandlerPort):
         collection in all databases is not allowed in order to prevent accidental data
         loss.
 
+        No error is raised if the db or collection does not exist.
+
         Args:
         - `db_name`: The name of the database.
         - `collection`: The name of the collection.

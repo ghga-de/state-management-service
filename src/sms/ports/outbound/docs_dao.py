@@ -60,6 +60,8 @@ class DocsDaoPort(ABC):
     ) -> None:
         """Delete documents satisfying the criteria.
 
+        No error is raised if the db or collection does not exist.
+
         Args:
         - `db_name`: The database name.
         - `collection`: The collection name.

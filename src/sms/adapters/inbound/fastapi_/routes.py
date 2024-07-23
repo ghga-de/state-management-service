@@ -171,7 +171,8 @@ async def upsert_docs(
     "/documents/{namespace}",
     operation_id="delete_documents",
     tags=["StateManagementService", "sms-mongodb"],
-    summary="Deletes all or some documents in the collection.",
+    summary="Deletes all or some documents in the collection. No error is raised if db"
+    + " or collection do not exist.",
     status_code=status.HTTP_204_NO_CONTENT,
 )
 async def delete_docs(

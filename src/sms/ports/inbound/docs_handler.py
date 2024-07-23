@@ -96,6 +96,14 @@ class DocsHandlerPort(ABC):
     async def delete(self, db_name: str, collection: str, criteria: Criteria) -> None:
         """Delete documents satisfying the criteria.
 
+        If the wildcard for both db_name and collection is used, all data from all
+        collections is deleted. If a db is specified but the collection is a wildcard,
+        all collections in that db are deleted. However, deleting data from a specific
+        collection in all databases is not allowed in order to prevent accidental data
+        loss.
+
+        No error is raised if the db or collection does not exist.
+
         Args:
         - `db_name`: The name of the database.
         - `collection`: The name of the collection.

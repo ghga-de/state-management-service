@@ -118,3 +118,21 @@ async def test_get_db_map_for_prefix(mongodb: MongoDbFixture):
         assert await docs_dao.get_db_map_for_prefix(
             prefix=config.db_prefix, db_name="nonexistent"
         ) == {"nonexistent": []}
+
+
+async def test_deletion_on_nonexistent_resources(mongodb: MongoDbFixture):
+    """Test delete method on nonexistent dbs, collections.
+
+    There should not be any error raised.
+    """
+    config = get_config(sources=[mongodb.config])
+
+    async with DocsDao(config=config) as docs_dao:
+        await docs_dao._client["exists"]["exists"].insert_one({"key": "value"})
+        # Delete nonexistent db contents
+        await docs_dao.delete(
+            db_name="nonexistent", collection="nonexistent", criteria={}
+        )
+
+        # Delete nonexistent collection contents
+        await docs_dao.delete(db_name="exists", collection="nonexistent", criteria={})
