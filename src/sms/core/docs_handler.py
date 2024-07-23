@@ -233,17 +233,17 @@ class DocsHandler(DocsHandlerPort):
 
         if collection == "*":
             # Get a list of database and collection names for all dbs with the prefix
-            db_map: dict[str, list[str]] = await self._docs_dao.get_db_map_for_prefix(
-                self._prefix
+            # if db is wildcard, otherwise just the collections under the specified db
+            db_map: dict[str, list[str]] = (
+                await self._docs_dao.get_db_map_for_prefix(prefix=self._prefix)
+                if db_name == "*"
+                else await self._docs_dao.get_db_map_for_prefix(
+                    prefix=self._prefix, db_name=db_name
+                )
             )
 
-            # Set to all collections in all databases if db_name is a wildcard
-            # otherwise just the collections under the specified database
-            to_delete = (
-                [(db, collection) for db in db_map for collection in db_map[db]]
-                if db_name == "*"
-                else [(db_name, coll) for coll in db_map[db_name]]
-            )
+            # Make a list of tuples representing the (db, collection)s to delete
+            to_delete = [(db, collection) for db in db_map for collection in db_map[db]]
         elif db_name == "*":
             error = ValueError(
                 "Cannot use wildcard for db_name with specific collection"

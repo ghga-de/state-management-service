@@ -108,3 +108,13 @@ async def test_get_db_map_for_prefix(mongodb: MongoDbFixture):
         assert not await docs_dao.get_db_map_for_prefix(prefix="")
         db_map = await docs_dao.get_db_map_for_prefix(prefix=config.db_prefix)
         assert db_map == expected_db_map
+
+        db1_map = await docs_dao.get_db_map_for_prefix(
+            prefix=config.db_prefix, db_name=db_name1
+        )
+
+        assert db1_map == {db_name1: ["test", "test2"]}
+
+        assert await docs_dao.get_db_map_for_prefix(
+            prefix=config.db_prefix, db_name="nonexistent"
+        ) == {"nonexistent": []}

@@ -230,11 +230,6 @@ async def test_wildcard_deletion():
     """Test deletion with wildcard arguments."""
     docs_dao = AsyncMock(spec=DocsDaoPort)
     docs_dao.delete = AsyncMock()
-    docs_dao.get_db_map_for_prefix.return_value = {
-        TEST_DB: [ALLOPS, READONLY, WRITEONLY],
-        "testdb2": [WRITEONLY],
-        "testdb3": [READONLY],
-    }
     config = get_config()
     docs_handler = DocsHandler(config=config, docs_dao=docs_dao)
 
@@ -245,6 +240,11 @@ async def test_wildcard_deletion():
     docs_dao.delete.reset_mock()
 
     # Delete all collections in all databases that have write permissions
+    docs_dao.get_db_map_for_prefix.return_value = {
+        TEST_DB: [ALLOPS, READONLY, WRITEONLY],
+        "testdb2": [WRITEONLY],
+        "testdb3": [READONLY],
+    }
     await docs_handler.delete(db_name="*", collection="*", criteria={})
     assert docs_dao.delete.call_args_list == [
         call(db_name=f"{config.db_prefix}{TEST_DB}", collection=ALLOPS, criteria={}),
@@ -255,6 +255,9 @@ async def test_wildcard_deletion():
     docs_dao.delete.reset_mock()
 
     # Delete all collections in the testdb that have write permissions
+    docs_dao.get_db_map_for_prefix.return_value = {
+        TEST_DB: [ALLOPS, READONLY, WRITEONLY],
+    }
     await docs_handler.delete(db_name=TEST_DB, collection="*", criteria={})
     assert docs_dao.delete.call_args_list == [
         call(db_name=f"{config.db_prefix}{TEST_DB}", collection=ALLOPS, criteria={}),
