@@ -94,12 +94,14 @@ paths:
           pattern: ^(?P<db>[^.\\/ \"$]{1,64})\.(?P<collection>[^$]{1,255})$
           title: Namespace
           type: string
-      - description: Query parameters to filter the documents.
+      - description: Query parameters used to specify the documents affected by the
+          request.
         in: query
         name: Criteria
         required: false
         schema:
-          description: Query parameters to filter the documents.
+          description: Query parameters used to specify the documents affected by
+            the request.
           examples:
           - '{"name": "John"}'
           - '{"_id": {"$eq": 1}}'
@@ -136,12 +138,14 @@ paths:
           pattern: ^(?P<db>[^.\\/ \"$]{1,64})\.(?P<collection>[^$]{1,255})$
           title: Namespace
           type: string
-      - description: Query parameters to filter the documents.
+      - description: Query parameters used to specify the documents affected by the
+          request.
         in: query
         name: Criteria
         required: false
         schema:
-          description: Query parameters to filter the documents.
+          description: Query parameters used to specify the documents affected by
+            the request.
           examples:
           - '{"name": "John"}'
           - '{"_id": {"$eq": 1}}'

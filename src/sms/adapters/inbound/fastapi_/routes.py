@@ -15,7 +15,6 @@
 
 """FastAPI routes."""
 
-from collections.abc import Mapping
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Path, Request, status
@@ -38,15 +37,18 @@ NAMESPACE_PARAM = Path(
     description="The database and collection to query. Format: db_name.collection",
 )
 
-query_params_open_api: Mapping[str, Any] = {
+query_params_desc = (
+    "Query parameters used to specify the documents affected by the request."
+)
+query_params_open_api: dict[str, Any] = {
     "parameters": [
         {
-            "description": "Query parameters to filter the documents.",
+            "description": query_params_desc,
             "in": "query",
             "name": "Criteria",
             "required": False,
             "schema": {
-                "description": "Query parameters to filter the documents.",
+                "description": query_params_desc,
                 "title": "Criteria",
                 "type": "object",
                 "examples": [
