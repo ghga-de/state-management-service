@@ -88,7 +88,7 @@ async def test_get_docs(
     [
         (
             "?age={unquoted_key:53}",
-            "Check query parameters: The value for key 'age' is invalid.",
+            "The value for query parameter 'age' is invalid.",
         ),
         (
             "?age=34&age=33",
