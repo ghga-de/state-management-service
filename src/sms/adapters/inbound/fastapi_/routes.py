@@ -38,6 +38,27 @@ NAMESPACE_PARAM = Path(
     description="The database and collection to query. Format: db_name.collection",
 )
 
+query_params_open_api: Mapping[str, Any] = {
+    "parameters": [
+        {
+            "description": "Query parameters to filter the documents.",
+            "in": "query",
+            "name": "Criteria",
+            "required": False,
+            "schema": {
+                "description": "Query parameters to filter the documents.",
+                "title": "Criteria",
+                "type": "object",
+                "examples": [
+                    '{"name": "John"}',
+                    '{"_id": {"$eq": 1}}',
+                    '{"age": {"$gt": 21}}',
+                ],
+            },
+        }
+    ]
+}
+
 
 @router.get(
     "/health",
@@ -89,15 +110,16 @@ def _check_for_multiple_query_params(query_params: QueryParams):
     summary="Returns all or some documents from the specified collection.",
     status_code=status.HTTP_200_OK,
     response_model=list[DocumentType],
+    openapi_extra=query_params_open_api,
 )
 async def get_docs(
     namespace: Annotated[str, NAMESPACE_PARAM],
-    request: Request,
     docs_handler: dummies.DocsHandlerPortDummy,
+    request: Request,
     _token: Annotated[TokenAuthContext, require_token],
-) -> list[Mapping[str, Any]]:
+) -> list[DocumentType]:
     """Returns all or some documents from the specified collection."""
-    query_params: QueryParams = request.query_params
+    query_params = request.query_params
 
     _check_for_multiple_query_params(query_params)
 
@@ -171,9 +193,10 @@ async def upsert_docs(
     "/documents/{namespace}",
     operation_id="delete_documents",
     tags=["StateManagementService", "sms-mongodb"],
-    summary="Deletes all or some documents in the collection. No error is raised if db"
-    + " or collection do not exist.",
+    summary="Deletes all or some documents in the collection.",
+    description="No error is raised if the db or collection do not exist.",
     status_code=status.HTTP_204_NO_CONTENT,
+    openapi_extra=query_params_open_api,
 )
 async def delete_docs(
     namespace: Annotated[str, NAMESPACE_PARAM],
