@@ -66,3 +66,13 @@ class DocsDaoPort(ABC):
         - `criteria`: The criteria to use for filtering the documents (mapping)
         """
         ...
+
+    @abstractmethod
+    async def get_db_map_for_prefix(self, prefix: str) -> dict[str, list[str]]:
+        """Get a dict containing a list of collections for each database.
+
+        Only returns databases that start with the given prefix, and it returns the
+        database names with `prefix` stripped. An empty dict is returned if `prefix` is
+        empty.
+        """
+        ...

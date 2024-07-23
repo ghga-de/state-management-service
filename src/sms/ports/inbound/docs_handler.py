@@ -53,7 +53,7 @@ class DocsHandlerPort(ABC):
         """Raised when the criteria format is invalid."""
 
         def __init__(self, *, key: str):
-            super().__init__(f"The value for key '{key}' is invalid.")
+            super().__init__(f"The value for query parameter '{key}' is invalid.")
 
     @abstractmethod
     async def get(

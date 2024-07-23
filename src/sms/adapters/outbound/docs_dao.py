@@ -88,3 +88,22 @@ class DocsDao(DocsDaoPort):
         - `criteria`: The criteria to use for filtering the documents (mapping)
         """
         await self._client[db_name][collection].delete_many(criteria)
+
+    async def get_db_map_for_prefix(self, prefix: str) -> dict[str, list[str]]:
+        """Get a dict containing a list of collections for each database.
+
+        Only returns databases that start with the given prefix, and it returns the
+        database names with `prefix` stripped. An empty dict is returned if `prefix` is
+        empty.
+        """
+        return (
+            {
+                db.removeprefix(prefix): sorted(
+                    await self._client[db].list_collection_names()
+                )
+                for db in await self._client.list_database_names()
+                if db.startswith(prefix)
+            }
+            if prefix
+            else {}
+        )
