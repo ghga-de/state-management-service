@@ -85,10 +85,15 @@ async def test_all_ops(mongodb: MongoDbFixture):
 async def test_get_db_map_for_prefix(mongodb: MongoDbFixture):
     """Test get_db_map_for_prefix method on the docs dao."""
     config = get_config(sources=[mongodb.config])
+    prefix = config.db_prefix
 
     db_name1 = "db1"
     db_name2 = "db2"
-    expected_db_map = {db_name1: ["test", "test2"], db_name2: ["test1"]}
+    db_map_prefix_set = {db_name1: ["test", "test2"], db_name2: ["test1"]}
+    db_map_no_prefix = {
+        prefix + db_name1: ["test", "test2"],
+        prefix + db_name2: ["test1"],
+    }
 
     async with DocsDao(config=config) as docs_dao:
         # MongoDbFixture reset only empties collections, it doesn't delete them
@@ -98,26 +103,38 @@ async def test_get_db_map_for_prefix(mongodb: MongoDbFixture):
                 await docs_dao._client.drop_database(db)
 
         # Insert documents to create the expected db_map
-        for db_name, colls in expected_db_map.items():
+        for db_name, colls in db_map_prefix_set.items():
             for coll in colls:
                 await docs_dao._client[f"{config.db_prefix}{db_name}"][coll].insert_one(
                     {"key": "value"}
                 )
 
+        # Wrong prefix supplied, nothing should match
         assert not await docs_dao.get_db_map_for_prefix(prefix="db")
-        assert not await docs_dao.get_db_map_for_prefix(prefix="")
-        db_map = await docs_dao.get_db_map_for_prefix(prefix=config.db_prefix)
-        assert db_map == expected_db_map
 
-        db1_map = await docs_dao.get_db_map_for_prefix(
+        # Prefix not supplied, all databases (prefix should not be stripped from db names)
+        assert await docs_dao.get_db_map_for_prefix(prefix="") == db_map_no_prefix
+
+        # Correct prefix supplied, all databases
+        db_map = await docs_dao.get_db_map_for_prefix(prefix=config.db_prefix)
+        assert db_map == db_map_prefix_set
+
+        # Correct prefix supplied, specific database requested
+        db1_map_prefix = await docs_dao.get_db_map_for_prefix(
             prefix=config.db_prefix, db_name=db_name1
         )
+        assert db1_map_prefix == {db_name1: ["test", "test2"]}
 
-        assert db1_map == {db_name1: ["test", "test2"]}
-
+        # Correct prefix supplied, nonexistent database requested, should match nothing
         assert await docs_dao.get_db_map_for_prefix(
             prefix=config.db_prefix, db_name="nonexistent"
         ) == {"nonexistent": []}
+
+        # Prefix not supplied, specific db requested, should match 1 db
+        db1_map_no_prefix = await docs_dao.get_db_map_for_prefix(
+            prefix="", db_name=prefix + db_name1
+        )
+        assert db1_map_no_prefix == {prefix + db_name1: ["test", "test2"]}
 
 
 async def test_deletion_on_nonexistent_resources(mongodb: MongoDbFixture):

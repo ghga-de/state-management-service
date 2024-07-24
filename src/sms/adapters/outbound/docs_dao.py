@@ -102,9 +102,6 @@ class DocsDao(DocsDaoPort):
         empty. If `db_name` is provided but no collections exist, an empty list is
         returned with the database name as the key.
         """
-        if not prefix:
-            return {}
-
         if db_name:
             full_db_name = f"{prefix}{db_name}"
             return {
@@ -118,5 +115,5 @@ class DocsDao(DocsDaoPort):
                 await self._client[db].list_collection_names()
             )
             for db in await self._client.list_database_names()
-            if db.startswith(prefix)
+            if db.startswith(prefix) and db not in ("admin", "config", "local")
         }
