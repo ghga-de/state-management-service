@@ -17,7 +17,7 @@
 import pytest
 from hexkit.providers.mongodb.testutils import MongoDbFixture
 
-from sms.adapters.outbound.docs_dao import DocsDao
+from sms.adapters.outbound.docs_dao import DEFAULT_DBS, DocsDao
 from sms.models import DocumentType
 from tests.fixtures.config import get_config
 
@@ -112,7 +112,7 @@ async def test_get_db_map_for_prefix(
         # MongoDbFixture reset only empties collections, it doesn't delete them
         # so we need to drop the databases manually to verify the functionality
         for db in await docs_dao._client.list_database_names():
-            if db not in ("admin", "config", "local"):
+            if db not in DEFAULT_DBS:
                 await docs_dao._client.drop_database(db)
 
         # Insert documents to create the expected db_map

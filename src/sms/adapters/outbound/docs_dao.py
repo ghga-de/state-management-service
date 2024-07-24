@@ -20,6 +20,8 @@ from sms.config import Config
 from sms.models import Criteria, DocumentType
 from sms.ports.outbound.docs_dao import DocsDaoPort
 
+DEFAULT_DBS: tuple[str, str, str] = ("admin", "config", "local")
+
 
 class DocsDao(DocsDaoPort):
     """A class to perform CRUD operations in MongoDB."""
@@ -115,5 +117,5 @@ class DocsDao(DocsDaoPort):
                 await self._client[db].list_collection_names()
             )
             for db in await self._client.list_database_names()
-            if db.startswith(prefix) and db not in ("admin", "config", "local")
+            if db.startswith(prefix) and db not in DEFAULT_DBS
         }
