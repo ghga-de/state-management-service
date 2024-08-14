@@ -16,103 +16,23 @@
 """Test the REST API endpoints for /documents/"""
 
 from collections.abc import Mapping
-from contextlib import asynccontextmanager
-from dataclasses import dataclass
 from typing import Any
 from unittest.mock import AsyncMock
 
 import pytest
-from ghga_service_commons.api.testing import AsyncTestClient
 
-from sms.config import Config
 from sms.core.docs_handler import DocsHandler
-from sms.inject import prepare_rest_app
-from sms.models import Criteria, DocumentType, UpsertionDetails
+from sms.models import DocumentType, UpsertionDetails
 from sms.ports.inbound.docs_handler import DocsHandlerPort
 from sms.ports.outbound.docs_dao import DocsDaoPort
 from tests.fixtures.config import DEFAULT_TEST_CONFIG
+from tests.fixtures.dummies import DocsApiCallArgs, DummyDocsHandler
+from tests.fixtures.utils import VALID_BEARER_TOKEN, get_rest_client
 
 pytestmark = pytest.mark.asyncio()
-VALID_BEARER_TOKEN = "Bearer 43fadc91-b98f-4925-bd31-1b054b13dc55"
+
 TEST_URL = "/documents/testdb.testcollection"
 PERMISSION_ERROR_URL = "/documents/testdb.permission_error"
-
-
-@dataclass
-class DocsApiCallArgs:
-    """Encapsulates all the params used in a /documents/ API call of any kind."""
-
-    method: str
-    db_name: str
-    collection: str
-    criteria: Criteria | None = None
-    upsertion_details: UpsertionDetails | None = None
-
-
-class DummyDocsHandler(DocsHandlerPort):
-    """Dummy DocsDao implementation for unit testing."""
-
-    calls: list[DocsApiCallArgs]
-
-    def __init__(self):
-        self.calls = []
-
-    async def get(self, db_name: str, collection: str, criteria: Criteria):
-        """Dummy get implementation. It records the call and returns an empty list.
-
-        Optionally, it raises a PermissionError if the collection is named "permission_error".
-        """
-        call = DocsApiCallArgs(
-            method="get", db_name=db_name, collection=collection, criteria=criteria
-        )
-        self.calls.append(call)
-        if collection == "permission_error":
-            raise PermissionError()
-        return [{}]
-
-    async def upsert(
-        self,
-        db_name: str,
-        collection: str,
-        upsertion_details: UpsertionDetails,
-    ):
-        """Dummy upsert implementation. It records the call.
-
-        Optionally, it raises a PermissionError if the collection is named "permission_error".
-        """
-        call = DocsApiCallArgs(
-            method="put",
-            db_name=db_name,
-            collection=collection,
-            upsertion_details=upsertion_details,
-        )
-        self.calls.append(call)
-        if collection == "permission_error":
-            raise PermissionError()
-
-    async def delete(self, db_name: str, collection: str, criteria: Criteria):
-        """Dummy delete implementation. It records the call.
-
-        Optionally, it raises a PermissionError if the collection is named "permission_error".
-        """
-        call = DocsApiCallArgs(
-            method="delete", db_name=db_name, collection=collection, criteria=criteria
-        )
-        self.calls.append(call)
-        if collection == "permission_error":
-            raise PermissionError()
-        if db_name == "*" and collection != "*":
-            raise ValueError("Cannot use wildcard for db_name with specific collection")
-
-
-@asynccontextmanager
-async def get_rest_client(config: Config, docs_handler_override: DocsHandlerPort):
-    """Prepare a REST API client for testing."""
-    async with prepare_rest_app(
-        config=config, docs_handler_override=docs_handler_override
-    ) as app:
-        async with AsyncTestClient(app) as client:
-            yield client
 
 
 async def test_health_check():

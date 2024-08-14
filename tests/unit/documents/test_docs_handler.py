@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Test the DocDao class without any real"""
+"""Test the DocsHandler class directly without actual DB instance."""
 
 from contextlib import nullcontext
 from unittest.mock import AsyncMock, call
