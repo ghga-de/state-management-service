@@ -24,13 +24,13 @@ We recommend using the provided Docker container.
 
 A pre-build version is available at [docker hub](https://hub.docker.com/repository/docker/ghga/state-management-service):
 ```bash
-docker pull ghga/state-management-service:1.1.0
+docker pull ghga/state-management-service:1.2.0
 ```
 
 Or you can build the container yourself from the [`./Dockerfile`](./Dockerfile):
 ```bash
 # Execute in the repo's root dir:
-docker build -t ghga/state-management-service:1.1.0 .
+docker build -t ghga/state-management-service:1.2.0 .
 ```
 
 For production-ready deployment, we recommend using Kubernetes, however,
@@ -38,7 +38,7 @@ for simple use cases, you could execute the service using docker
 on a single server:
 ```bash
 # The entrypoint is preconfigured:
-docker run -p 8080:8080 ghga/state-management-service:1.1.0 --help
+docker run -p 8080:8080 ghga/state-management-service:1.2.0 --help
 ```
 
 If you prefer not to use containers, you may install the service from source:
@@ -55,7 +55,69 @@ sms --help
 ### Parameters
 
 The service requires the following configuration parameters:
-- **`token_hashes`** *(array)*: List of token hashes corresponding to the tokens that can be used to authenticate calls to this service. Hashes are made with SHA-256.
+- **`s3_endpoint_url`** *(string, required)*: URL to the S3 API.
+
+
+  Examples:
+
+  ```json
+  "http://localhost:4566"
+  ```
+
+
+- **`s3_access_key_id`** *(string, required)*: Part of credentials for login into the S3 service. See: https://boto3.amazonaws.com/v1/documentation/api/latest/guide/credentials.html.
+
+
+  Examples:
+
+  ```json
+  "my-access-key-id"
+  ```
+
+
+- **`s3_secret_access_key`** *(string, format: password, required)*: Part of credentials for login into the S3 service. See: https://boto3.amazonaws.com/v1/documentation/api/latest/guide/credentials.html.
+
+
+  Examples:
+
+  ```json
+  "my-secret-access-key"
+  ```
+
+
+- **`s3_session_token`**: Part of credentials for login into the S3 service. See: https://boto3.amazonaws.com/v1/documentation/api/latest/guide/credentials.html. Default: `null`.
+
+  - **Any of**
+
+    - *string, format: password*
+
+    - *null*
+
+
+  Examples:
+
+  ```json
+  "my-session-token"
+  ```
+
+
+- **`aws_config_ini`**: Path to a config file for specifying more advanced S3 parameters. This should follow the format described here: https://boto3.amazonaws.com/v1/documentation/api/latest/guide/configuration.html#using-a-configuration-file. Default: `null`.
+
+  - **Any of**
+
+    - *string, format: path*
+
+    - *null*
+
+
+  Examples:
+
+  ```json
+  "~/.aws/config"
+  ```
+
+
+- **`token_hashes`** *(array, required)*: List of token hashes corresponding to the tokens that can be used to authenticate calls to this service. Hashes are made with SHA-256.
 
   - **Items** *(string)*
 
@@ -67,7 +129,7 @@ The service requires the following configuration parameters:
   ```
 
 
-- **`db_prefix`** *(string)*: Prefix to add to all database names used in the SMS.
+- **`db_prefix`** *(string, required)*: Prefix to add to all database names used in the SMS.
 
 
   Examples:
@@ -139,7 +201,7 @@ The service requires the following configuration parameters:
   ```
 
 
-- **`db_connection_str`** *(string, format: password)*: MongoDB connection string. Might include credentials. For more information see: https://naiveskill.com/mongodb-connection-string/.
+- **`db_connection_str`** *(string, format: password, required)*: MongoDB connection string. Might include credentials. For more information see: https://naiveskill.com/mongodb-connection-string/.
 
 
   Examples:
@@ -153,7 +215,7 @@ The service requires the following configuration parameters:
 
 - **`service_name`** *(string)*: Short name of this service. Default: `"sms"`.
 
-- **`service_instance_id`** *(string)*: A string that uniquely identifies this instance across all instances of this service. This is included in log messages.
+- **`service_instance_id`** *(string, required)*: A string that uniquely identifies this instance across all instances of this service. This is included in log messages.
 
 
   Examples:
