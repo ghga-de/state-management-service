@@ -12,13 +12,3 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Import necessary test fixtures."""
-
-from hexkit.providers.mongodb.testutils import (  # noqa: F401
-    mongodb_container_fixture,
-    mongodb_fixture,
-)
-from hexkit.providers.s3.testutils import (  # noqa: F401
-    s3_container_fixture,
-    s3_fixture,
-)

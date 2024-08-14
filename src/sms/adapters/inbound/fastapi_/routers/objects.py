@@ -43,9 +43,12 @@ async def does_object_exist(
     _token: Annotated[TokenAuthContext, require_token],
 ):
     """Return a list of the objects currently existing in the S3 object storage."""
-    return await objects_handler.does_object_exist(
-        bucket_id=bucket_id, object_id=object_id
-    )
+    try:
+        return await objects_handler.does_object_exist(
+            bucket_id=bucket_id, object_id=object_id
+        )
+    except ObjectsHandlerPort.InvalidIdError as err:
+        raise HTTPException(status_code=422, detail=str(err)) from err
 
 
 @s3_router.get(
@@ -63,6 +66,8 @@ async def list_objects(
     """Return a list of the objects currently existing in the S3 object storage."""
     try:
         return await objects_handler.list_objects(bucket_id=bucket_id)
+    except ObjectsHandlerPort.BucketNotFoundError as err:
+        raise HTTPException(status_code=404, detail=str(err)) from err
     except ObjectsHandlerPort.InvalidBucketIdError as err:
         raise HTTPException(status_code=422, detail=str(err)) from err
 
@@ -83,3 +88,5 @@ async def delete_objects(
         await objects_handler.empty_bucket(bucket_id=bucket_id)
     except ObjectsHandlerPort.InvalidBucketIdError as err:
         raise HTTPException(status_code=422, detail=str(err)) from err
+    except ObjectsHandlerPort.BucketNotFoundError as err:
+        raise HTTPException(status_code=404, detail=str(err)) from err

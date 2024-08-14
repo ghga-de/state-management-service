@@ -20,13 +20,16 @@ from abc import ABC, abstractmethod
 class ObjectsHandlerPort(ABC):
     """Class for object storage management (S3)."""
 
-    class BucketNotFoundError(RuntimeError):
+    class NotFoundError(RuntimeError):
+        """Raised when an object or bucket does not exist."""
+
+    class BucketNotFoundError(NotFoundError):
         """Raised when a bucket does not exist."""
 
         def __init__(self, *, bucket_id: str):
             super().__init__(f"Bucket with ID '{bucket_id}' does not exist.")
 
-    class ObjectNotFoundError(RuntimeError):
+    class ObjectNotFoundError(NotFoundError):
         """Raised when an object does not exist."""
 
         def __init__(self, *, bucket_id: str, object_id: str):
@@ -36,13 +39,13 @@ class ObjectsHandlerPort(ABC):
     class InvalidIdError(RuntimeError):
         """Base class for errors raised when a bucket or object ID is invalid."""
 
-    class InvalidBucketIdError(RuntimeError):
+    class InvalidBucketIdError(InvalidIdError):
         """Raised when a bucket ID is invalid."""
 
         def __init__(self, *, bucket_id: str):
             super().__init__(f"Bucket ID '{bucket_id}' is invalid.")
 
-    class InvalidObjectIdError(RuntimeError):
+    class InvalidObjectIdError(InvalidIdError):
         """Raised when an object ID is invalid."""
 
         def __init__(self, *, object_id: str):
