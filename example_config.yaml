@@ -1,6 +1,7 @@
 allow_empty_prefix: false
 api_root_path: ''
 auto_reload: false
+aws_config_ini: null
 cors_allow_credentials: null
 cors_allowed_headers: null
 cors_allowed_methods: null
@@ -17,6 +18,10 @@ log_level: INFO
 log_traceback: true
 openapi_url: /openapi.json
 port: 8080
+s3_access_key_id: test
+s3_endpoint_url: http://localstack:4566
+s3_secret_access_key: '**********'
+s3_session_token: null
 service_instance_id: '1'
 service_name: sms
 token_hashes:

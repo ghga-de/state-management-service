@@ -21,6 +21,7 @@ from typing import Self
 from ghga_service_commons.api import ApiConfigBase
 from hexkit.config import config_from_yaml
 from hexkit.log import LoggingConfig
+from hexkit.providers.s3 import S3Config
 from pydantic import Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings
 
@@ -117,7 +118,7 @@ class SmsConfig(BaseSettings):
 
 
 @config_from_yaml(prefix=SERVICE_NAME)
-class Config(ApiConfigBase, LoggingConfig, SmsConfig):
+class Config(ApiConfigBase, LoggingConfig, SmsConfig, S3Config):
     """Config parameters and their defaults."""
 
     service_name: str = Field(
