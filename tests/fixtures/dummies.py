@@ -131,7 +131,7 @@ class DummyObjectsHandler(ObjectsHandlerPort):
         """
         self._validate_bucket_id(bucket_id)
         try:
-            self.buckets.pop(bucket_id, None)
+            self.buckets[bucket_id].clear()
         except KeyError as err:
             raise self.BucketNotFoundError(bucket_id=bucket_id) from err
 

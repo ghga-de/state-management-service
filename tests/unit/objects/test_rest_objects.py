@@ -27,8 +27,11 @@ from tests.fixtures.utils import VALID_BEARER_TOKEN, get_rest_client
 pytestmark = pytest.mark.asyncio()
 
 TEST_URL = "/objects"
-INVALID_BUCKET_RESPONSE = {"detail": "Bucket ID 'invalid' is invalid."}
-INVALID_OBJECT_RESPONSE = {"detail": "Object ID 'invalid' is invalid."}
+INVALID_BUCKET_JSON = {"detail": "Bucket ID 'invalid' is invalid."}
+INVALID_OBJECT_JSON = {"detail": "Object ID 'invalid' is invalid."}
+BUCKET_NOT_FOUND_JSON = {
+    "detail": "Bucket with ID 'non_existent_bucket' does not exist."
+}
 
 
 @pytest.mark.parametrize(
@@ -37,8 +40,8 @@ INVALID_OBJECT_RESPONSE = {"detail": "Object ID 'invalid' is invalid."}
         ("bucket", "object1", True),
         ("bucket", "non_existent_object", False),
         ("non_existent_bucket", "object1", False),
-        ("invalid", "object1", INVALID_BUCKET_RESPONSE),
-        ("bucket", "invalid", INVALID_OBJECT_RESPONSE),
+        ("invalid", "object1", INVALID_BUCKET_JSON),
+        ("bucket", "invalid", INVALID_OBJECT_JSON),
     ],
     ids=[
         "happy_path",
@@ -84,12 +87,8 @@ async def test_does_object_exist(bucket_id: str, object_id: str, expected_result
     [
         ("bucket", ["object1"], 200),
         ("empty_bucket", [], 200),
-        (
-            "non_existent_bucket",
-            {"detail": "Bucket with ID 'non_existent_bucket' does not exist."},
-            404,
-        ),
-        ("invalid", INVALID_BUCKET_RESPONSE, 422),
+        ("non_existent_bucket", BUCKET_NOT_FOUND_JSON, 404),
+        ("invalid", INVALID_BUCKET_JSON, 422),
     ],
     ids=["HappyPath", "EmptyBucket", "NonExistentBucket", "InvalidBucket"],
 )
@@ -122,4 +121,69 @@ async def test_list_objects(
         assert response.json() == expected_result
 
 
-# TODO: test_delete_objects
+@pytest.mark.parametrize(
+    "bucket_id, status_code",
+    [
+        ("bucket", 204),
+        ("empty_bucket", 204),
+        ("non_existent_bucket", 404),
+        ("invalid", 422),
+    ],
+)
+async def test_delete_objects(bucket_id: str, status_code: int):
+    """Test the /objects/{bucket_id} endpoint (delete_objects).
+
+    Check for:
+    - Happy path (bucket exists, has objects)
+    - Bucket exists, no objects
+    - Bucket does not exist
+    - Invalid bucket ID
+    """
+    mock_docs_handler = AsyncMock()
+
+    # establish dummy with multiple objects
+    dummy_objects_handler = DummyObjectsHandler(
+        buckets={"bucket": ["object1", "object2", "object3"], "empty_bucket": []}
+    )
+    async with get_rest_client(
+        config=DEFAULT_TEST_CONFIG,
+        docs_handler_override=mock_docs_handler,
+        objects_handler_override=dummy_objects_handler,
+    ) as client:
+        response = await client.delete(
+            f"{TEST_URL}/{bucket_id}",
+            headers={"Authorization": VALID_BEARER_TOKEN},
+        )
+
+        assert response.status_code == status_code
+        match status_code:
+            case 204:
+                assert dummy_objects_handler.buckets[bucket_id] == []
+            case 404:
+                assert response.json() == BUCKET_NOT_FOUND_JSON
+            case 422:
+                assert response.json() == INVALID_BUCKET_JSON
+
+
+async def test_auth():
+    """Test that all /objects endpoints require authentication."""
+    mock_docs_handler = AsyncMock()
+    dummy_objects_handler = DummyObjectsHandler({"bucket": ["object1"]})
+    async with get_rest_client(
+        config=DEFAULT_TEST_CONFIG,
+        docs_handler_override=mock_docs_handler,
+        objects_handler_override=dummy_objects_handler,
+    ) as client:
+        response = await client.get(f"{TEST_URL}/bucket/object", headers={})
+
+        unauthenticated_json = {"detail": "Not authenticated"}
+        assert response.status_code == 401
+        assert response.json() == unauthenticated_json
+
+        response = await client.get(f"{TEST_URL}/bucket", headers={})
+        assert response.status_code == 401
+        assert response.json() == unauthenticated_json
+
+        response = await client.delete(f"{TEST_URL}/bucket", headers={})
+        assert response.status_code == 401
+        assert response.json() == unauthenticated_json
