@@ -98,8 +98,18 @@ class DummyObjectsHandler(ObjectsHandlerPort):
 
     buckets: dict[str, list[str]]  # bucket_id -> object_ids
 
-    def __init__(self, buckets: dict[str, list[str]] | None = None):
+    def __init__(
+        self,
+        buckets: dict[str, list[str]] | None = None,
+        raise_operation_error: bool = False,
+    ):
         self.buckets = buckets if buckets else {}
+        self.raise_operation_error = raise_operation_error
+
+    def _raise_op_error_if_set(self):
+        """Will raise an OperationError if `raise_operation_error` is set."""
+        if self.raise_operation_error:
+            raise self.OperationError()
 
     def _validate_bucket_id(self, bucket_id: str) -> None:
         """Check if a bucket ID is valid."""
@@ -117,9 +127,11 @@ class DummyObjectsHandler(ObjectsHandlerPort):
         Returns a bool indicating whether or not the object exists in the given bucket.
 
         Raises:
+        - `OperationError`: If `raise_operation_error` is set.
         - `InvalidBucketIdError`: If the bucket ID is literally "invalid".
         - `InvalidObjectIdError`: If the object ID is literally "invalid".
         """
+        self._raise_op_error_if_set()
         self._validate_bucket_id(bucket_id)
         self._validate_object_id(object_id)
         return object_id in self.buckets.get(bucket_id, [])
@@ -127,8 +139,11 @@ class DummyObjectsHandler(ObjectsHandlerPort):
     async def empty_bucket(self, bucket_id: str) -> None:
         """Delete all objects in the specified bucket.
 
-        Raises `BucketNotFoundError` if the bucket does not exist.
+        Raises:
+        - `OperationError`: If `raise_operation_error` is set.
+        - `BucketNotFoundError`: If the bucket does not exist.
         """
+        self._raise_op_error_if_set()
         self._validate_bucket_id(bucket_id)
         try:
             self.buckets[bucket_id].clear()
@@ -139,9 +154,11 @@ class DummyObjectsHandler(ObjectsHandlerPort):
         """List all objects in the specified bucket.
 
         Raises:
+        - `OperationError`: If `raise_operation_error` is set.
         - `BucketNotFoundError`: If the bucket does not exist.
         - `InvalidBucketIdError`: If the bucket ID is literally "invalid".
         """
+        self._raise_op_error_if_set()
         self._validate_bucket_id(bucket_id)
         try:
             return self.buckets[bucket_id]

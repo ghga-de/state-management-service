@@ -21,7 +21,6 @@ from sms.config import Config
 from sms.ports.inbound.objects_handler import ObjectsHandlerPort
 
 
-# TODO: Handle left-field errors such as connection problems
 class ObjectsHandler(ObjectsHandlerPort):
     """Class for object storage management (S3)."""
 
@@ -49,6 +48,8 @@ class ObjectsHandler(ObjectsHandlerPort):
             raise self.InvalidBucketIdError(bucket_id=bucket_id) from err
         except ObjectStorageProtocol.ObjectIdValidationError as err:
             raise self.InvalidObjectIdError(object_id=object_id) from err
+        except Exception as err:
+            raise self.OperationError() from err
 
     async def empty_bucket(self, bucket_id: str) -> None:
         """Delete all objects in the specified bucket.
@@ -73,6 +74,8 @@ class ObjectsHandler(ObjectsHandlerPort):
                 raise self.ObjectNotFoundError(
                     object_id=object_id, bucket_id=bucket_id
                 ) from err
+            except Exception as err:
+                raise self.OperationError() from err
 
     async def list_objects(self, bucket_id: str) -> list[str]:
         """List all objects in the specified bucket.
@@ -89,3 +92,5 @@ class ObjectsHandler(ObjectsHandlerPort):
             raise self.BucketNotFoundError(bucket_id=bucket_id) from err
         except ObjectStorageProtocol.BucketIdValidationError as err:
             raise self.InvalidBucketIdError(bucket_id=bucket_id) from err
+        except Exception as err:
+            raise self.OperationError() from err

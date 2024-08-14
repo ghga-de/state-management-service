@@ -20,6 +20,13 @@ from abc import ABC, abstractmethod
 class ObjectsHandlerPort(ABC):
     """Class for object storage management (S3)."""
 
+    class OperationError(RuntimeError):
+        """Catch-all exception for errors that aren't defined below."""
+
+        def __init__(self):
+            msg = "An error occurred while performing the object-storage operation."
+            super().__init__(msg)
+
     class NotFoundError(RuntimeError):
         """Raised when an object or bucket does not exist."""
 

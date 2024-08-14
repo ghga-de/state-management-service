@@ -28,7 +28,6 @@ from sms.ports.inbound.objects_handler import ObjectsHandlerPort
 s3_router = APIRouter()
 
 
-# TODO: Handle left-field errors such as connection problems
 @s3_router.get(
     "/{bucket_id}/{object_id}",
     operation_id="check_objects_exists",
@@ -49,6 +48,8 @@ async def does_object_exist(
         )
     except ObjectsHandlerPort.InvalidIdError as err:
         raise HTTPException(status_code=422, detail=str(err)) from err
+    except ObjectsHandlerPort.OperationError as err:
+        raise HTTPException(status_code=500, detail=str(err)) from err
 
 
 @s3_router.get(
@@ -70,6 +71,8 @@ async def list_objects(
         raise HTTPException(status_code=404, detail=str(err)) from err
     except ObjectsHandlerPort.InvalidBucketIdError as err:
         raise HTTPException(status_code=422, detail=str(err)) from err
+    except ObjectsHandlerPort.OperationError as err:
+        raise HTTPException(status_code=500, detail=str(err)) from err
 
 
 @s3_router.delete(
@@ -90,3 +93,5 @@ async def delete_objects(
         raise HTTPException(status_code=422, detail=str(err)) from err
     except ObjectsHandlerPort.BucketNotFoundError as err:
         raise HTTPException(status_code=404, detail=str(err)) from err
+    except ObjectsHandlerPort.OperationError as err:
+        raise HTTPException(status_code=500, detail=str(err)) from err

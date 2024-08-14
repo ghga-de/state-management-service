@@ -187,3 +187,36 @@ async def test_auth():
         response = await client.delete(f"{TEST_URL}/bucket", headers={})
         assert response.status_code == 401
         assert response.json() == unauthenticated_json
+
+
+async def test_operation_errors():
+    """Verify that operation errors generate a 500 response."""
+    mock_docs_handler = AsyncMock()
+    dummy_objects_handler = DummyObjectsHandler(
+        buckets={"bucket": ["object1"]}, raise_operation_error=True
+    )
+    async with get_rest_client(
+        config=DEFAULT_TEST_CONFIG,
+        docs_handler_override=mock_docs_handler,
+        objects_handler_override=dummy_objects_handler,
+    ) as client:
+        response = await client.get(
+            f"{TEST_URL}/bucket/object", headers={"Authorization": VALID_BEARER_TOKEN}
+        )
+        operation_error_json = {
+            "detail": "An error occurred while performing the object-storage operation."
+        }
+        assert response.status_code == 500
+        assert response.json() == operation_error_json
+
+        response = await client.get(
+            f"{TEST_URL}/bucket", headers={"Authorization": VALID_BEARER_TOKEN}
+        )
+        assert response.status_code == 500
+        assert response.json() == operation_error_json
+
+        response = await client.delete(
+            f"{TEST_URL}/bucket", headers={"Authorization": VALID_BEARER_TOKEN}
+        )
+        assert response.status_code == 500
+        assert response.json() == operation_error_json

@@ -171,3 +171,27 @@ async def test_list_objects():
     # Empty bucket
     storage.buckets["bucket"] = []
     result = await objects_handler.list_objects("bucket")
+
+
+async def test_misc_error_handling():
+    """Verify that unexpected errors are re-raised as OperationError."""
+    storage = get_storage_mock()
+    storage.does_object_exist.side_effect = RuntimeError
+    storage.delete_object.side_effect = RuntimeError
+    storage.list_all_object_ids.side_effect = RuntimeError
+    objects_handler = ObjectsHandler(config=DEFAULT_TEST_CONFIG, object_storage=storage)
+
+    # Error during does_object_exist
+    storage.does_object_exist.side_effect = Exception
+    with pytest.raises(objects_handler.OperationError):
+        await objects_handler.does_object_exist("bucket", "object1")
+
+    # Error during delete_object
+    storage.delete_object.side_effect = Exception
+    with pytest.raises(objects_handler.OperationError):
+        await objects_handler.empty_bucket("bucket")
+
+    # Error during list_objects
+    storage.list_all_object_ids.side_effect = Exception
+    with pytest.raises(objects_handler.OperationError):
+        await objects_handler.list_objects("bucket")
