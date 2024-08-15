@@ -34,42 +34,6 @@ class DocsApiCallArgs:
     upsertion_details: UpsertionDetails | None = None
 
 
-# class DummyDocsDao(DocsDaoPort):
-#     """DocsDao dummy class for unit testing."""
-
-#     def __init__(self, )
-#     async def get(
-#         self, *, db_name: str, collection: str, criteria: Criteria
-#     ) -> list[DocumentType]:
-#         """Get documents satisfying the criteria."""
-#         pass
-
-#     async def upsert(
-#         self,
-#         *,
-#         db_name: str,
-#         collection: str,
-#         id_field: str,
-#         documents: list[DocumentType],
-#     ) -> None:
-#         """Insert or update one or more documents."""
-#         pass
-
-#     async def delete(
-#         self, *, db_name: str, collection: str, criteria: Criteria
-#     ) -> None:
-#         """Delete documents satisfying the criteria."""
-#         pass
-
-#     async def get_db_map_for_prefix(
-#         self, *, prefix: str, db_name: str | None = None
-#     ) -> dict[str, list[str]]:
-#         """Get a dict containing a list of collections for each database, or a specific
-#         database (if `db_name` is provided).
-#         """
-#         pass
-
-
 class DummyDocsHandler(DocsHandlerPort):
     """Dummy DocsHandler implementation for unit testing."""
 
