@@ -103,7 +103,7 @@ async def test_list_objects(
     """
     mock_docs_handler = AsyncMock()
     dummy_objects_handler = DummyObjectsHandler(
-        buckets={"bucket": ["object1"], "empty_bucket": []}
+        buckets={"bucket": ["object1"], "empty-bucket": []}
     )
     async with get_rest_client(
         config=DEFAULT_TEST_CONFIG,
@@ -141,7 +141,7 @@ async def test_delete_objects(bucket_id: str, status_code: int):
 
     # establish dummy with multiple objects
     dummy_objects_handler = DummyObjectsHandler(
-        buckets={"bucket": ["object1", "object2", "object3"], "empty_bucket": []}
+        buckets={"bucket": ["object1", "object2", "object3"], "empty-bucket": []}
     )
     async with get_rest_client(
         config=DEFAULT_TEST_CONFIG,

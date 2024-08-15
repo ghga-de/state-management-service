@@ -33,7 +33,7 @@ def check_id_validity(id_: str):
     Just employs a simple length check.
     Returns True if it is valid, False if invalid.
     """
-    return not (len(id_) < 3 or len(id_) > 63)
+    return 3 <= len(id_) <= 63
 
 
 def validate_bucket_id(bucket_id: str):
@@ -52,6 +52,10 @@ def get_storage_mock():
     """Initialize a mock object storage instance with a bucket and an object."""
     mock = AsyncMock(spec=S3ObjectStorage)
     mock.buckets = {"bucket": ["object1"]}
+
+    async def does_bucket_exist(bucket_id: str):
+        validate_bucket_id(bucket_id)
+        return bucket_id in mock.buckets
 
     async def does_object_exist(bucket_id: str, object_id: str):
         validate_bucket_id(bucket_id)
@@ -80,30 +84,32 @@ def get_storage_mock():
     mock.does_object_exist.side_effect = does_object_exist
     mock.delete_object.side_effect = delete_object
     mock.list_all_object_ids.side_effect = list_all_object_ids
+    mock.does_bucket_exist.side_effect = does_bucket_exist
     return mock
 
 
 @pytest.mark.parametrize(
-    "bucket_id, object_id, expected_result",
+    "bucket_id, object_id, expected_result, error",
     [
-        ("bucket", "object1", True),
-        ("bucket", "non_existent_object", False),
-        ("non_existent_bucket", "object1", False),
-        ("a", "object1", False),
-        ("bucket", "a", False),
+        ("bucket", "object1", True, None),
+        ("bucket", "non-existent-object", False, None),
+        ("non-existent-bucket", "object1", False, ObjectsHandler.BucketNotFoundError),
+        ("a", "object1", False, ObjectsHandler.InvalidBucketIdError),
+        ("bucket", "a", False, ObjectsHandler.InvalidObjectIdError),
     ],
     ids=[
-        "happy_path",
-        "nonexistent_object",
-        "nonexistent_bucket",
-        "invalid_bucket",
-        "invalid_object",
+        "HappyPath",
+        "NonExistentObject",
+        "NonExistentBucket",
+        "InvalidBucket",
+        "InvalidObject",
     ],
 )
 async def test_does_object_exist(
     bucket_id: str,
     object_id: str,
     expected_result: bool,
+    error: type[Exception] | None,
 ):
     """Test for seeing if object exists.
 
@@ -113,11 +119,6 @@ async def test_does_object_exist(
     storage = get_storage_mock()
     objects_handler = ObjectsHandler(config=DEFAULT_TEST_CONFIG, object_storage=storage)
 
-    error: type[Exception] | None = None
-    if not check_id_validity(bucket_id):
-        error = objects_handler.InvalidBucketIdError
-    elif not check_id_validity(object_id):
-        error = objects_handler.InvalidObjectIdError
     with pytest.raises(error) if error else nullcontext():
         result = await objects_handler.does_object_exist(bucket_id, object_id)
         assert result == expected_result
@@ -137,7 +138,7 @@ async def test_empty_bucket():
 
     # nonexistent bucket
     with pytest.raises(objects_handler.BucketNotFoundError):
-        await objects_handler.empty_bucket("non_existent_bucket")
+        await objects_handler.empty_bucket("non-existent-bucket")
 
     # invalid bucket name
     with pytest.raises(objects_handler.InvalidBucketIdError):
@@ -162,7 +163,7 @@ async def test_list_objects():
 
     # Nonexistent bucket
     with pytest.raises(objects_handler.BucketNotFoundError):
-        await objects_handler.list_objects("non_existent_bucket")
+        await objects_handler.list_objects("non-existent-bucket")
 
     # Invalid bucket name
     with pytest.raises(objects_handler.InvalidBucketIdError):
