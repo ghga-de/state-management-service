@@ -48,6 +48,8 @@ async def does_object_exist(
         )
     except ObjectsHandlerPort.InvalidIdError as err:
         raise HTTPException(status_code=422, detail=str(err)) from err
+    except ObjectsHandlerPort.BucketNotFoundError as err:
+        raise HTTPException(status_code=404, detail=str(err)) from err
     except ObjectsHandlerPort.OperationError as err:
         raise HTTPException(status_code=500, detail=str(err)) from err
 
@@ -91,7 +93,7 @@ async def delete_objects(
         await objects_handler.empty_bucket(bucket_id=bucket_id)
     except ObjectsHandlerPort.InvalidBucketIdError as err:
         raise HTTPException(status_code=422, detail=str(err)) from err
-    except ObjectsHandlerPort.BucketNotFoundError as err:
-        raise HTTPException(status_code=404, detail=str(err)) from err
     except ObjectsHandlerPort.OperationError as err:
         raise HTTPException(status_code=500, detail=str(err)) from err
+    except ObjectsHandlerPort.BucketNotFoundError:
+        pass

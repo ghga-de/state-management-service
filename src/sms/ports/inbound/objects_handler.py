@@ -62,10 +62,10 @@ class ObjectsHandlerPort(ABC):
     async def does_object_exist(self, bucket_id: str, object_id: str) -> bool:
         """Check if an object exists in the specified bucket.
 
-        Returns `False` if the bucket does not exist or the object is not in the bucket,
-        otherwise `True`.
+        Returns `False` if the object is not in the bucket, otherwise `True`.
 
         Raises:
+        - `BucketNotFoundError`: When the bucket does not exist.
         - `InvalidBucketIdError`: When the bucket ID is invalid.
         - `InvalidObjectIdError`: When the object ID is invalid.
         """
@@ -76,7 +76,6 @@ class ObjectsHandlerPort(ABC):
         """Delete all objects in the specified bucket.
 
         Raises:
-        - `BucketNotFoundError`: When the bucket does not exist.
         - `InvalidBucketIdError`: When the bucket ID is invalid.
         - `ObjectNotFoundError`: When an object is unexpectedly absent.
         """

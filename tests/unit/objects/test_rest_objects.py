@@ -30,36 +30,38 @@ TEST_URL = "/objects"
 INVALID_BUCKET_JSON = {"detail": "Bucket ID 'invalid' is invalid."}
 INVALID_OBJECT_JSON = {"detail": "Object ID 'invalid' is invalid."}
 BUCKET_NOT_FOUND_JSON = {
-    "detail": "Bucket with ID 'non_existent_bucket' does not exist."
+    "detail": "Bucket with ID 'non-existent-bucket' does not exist."
 }
 
 
 @pytest.mark.parametrize(
-    "bucket_id, object_id, expected_result",
+    "bucket_id, object_id, expected_result, status_code",
     [
-        ("bucket", "object1", True),
-        ("bucket", "non_existent_object", False),
-        ("non_existent_bucket", "object1", False),
-        ("invalid", "object1", INVALID_BUCKET_JSON),
-        ("bucket", "invalid", INVALID_OBJECT_JSON),
+        ("bucket", "object1", True, 200),
+        ("bucket", "non-existent-object", False, 200),
+        ("non-existent-bucket", "object1", False, 200),
+        ("invalid", "object1", INVALID_BUCKET_JSON, 422),
+        ("bucket", "invalid", INVALID_OBJECT_JSON, 422),
     ],
     ids=[
-        "happy_path",
-        "nonexistent_object",
-        "nonexistent_bucket",
-        "invalid_bucket",
-        "invalid_object",
+        "HappyPath",
+        "NonExistentObject",
+        "NonExistentBucket",
+        "InvalidBucket",
+        "InvalidObject",
     ],
 )
-async def test_does_object_exist(bucket_id: str, object_id: str, expected_result: bool):
+async def test_does_object_exist(
+    bucket_id: str, object_id: str, expected_result: bool, status_code: int
+):
     """Test the `does_object_exist` method.
 
     Check for:
     - Happy path (object exists)
     - Bucket exists, object does not
-    - Bucket does not exist
-    - Invalid bucket ID
-    - Invalid object ID
+    - Bucket does not exist (error)
+    - Invalid bucket ID (error)
+    - Invalid object ID (error)
     """
     mock_docs_handler = AsyncMock()  # don't declare spec (to keep imports cleaner)
 
@@ -75,19 +77,15 @@ async def test_does_object_exist(bucket_id: str, object_id: str, expected_result
         )
 
         assert response.json() == expected_result
-        assert (
-            response.status_code == 422
-            if (bucket_id == "invalid" or object_id == "invalid")
-            else 200
-        )
+        assert response.status_code == status_code
 
 
 @pytest.mark.parametrize(
     "bucket_id, expected_result, status_code",
     [
         ("bucket", ["object1"], 200),
-        ("empty_bucket", [], 200),
-        ("non_existent_bucket", BUCKET_NOT_FOUND_JSON, 404),
+        ("empty-bucket", [], 200),
+        ("non-existent-bucket", BUCKET_NOT_FOUND_JSON, 404),
         ("invalid", INVALID_BUCKET_JSON, 422),
     ],
     ids=["HappyPath", "EmptyBucket", "NonExistentBucket", "InvalidBucket"],
@@ -100,8 +98,8 @@ async def test_list_objects(
     Check for:
     - Happy path (bucket exists, has objects)
     - Bucket exists, no objects
-    - Bucket does not exist
-    - Invalid bucket ID
+    - Bucket does not exist (error)
+    - Invalid bucket ID (error)
     """
     mock_docs_handler = AsyncMock()
     dummy_objects_handler = DummyObjectsHandler(
@@ -125,19 +123,19 @@ async def test_list_objects(
     "bucket_id, status_code",
     [
         ("bucket", 204),
-        ("empty_bucket", 204),
-        ("non_existent_bucket", 404),
+        ("empty-bucket", 204),
+        ("non-existent-bucket", 204),
         ("invalid", 422),
     ],
 )
 async def test_delete_objects(bucket_id: str, status_code: int):
-    """Test the /objects/{bucket_id} endpoint (delete_objects).
+    """Test the /objects/{bucket_id} endpoint (empty bucket endpoint).
 
     Check for:
     - Happy path (bucket exists, has objects)
     - Bucket exists, no objects
-    - Bucket does not exist
-    - Invalid bucket ID
+    - Bucket does not exist (should not raise an error)
+    - Invalid bucket ID (error)
     """
     mock_docs_handler = AsyncMock()
 
@@ -158,9 +156,7 @@ async def test_delete_objects(bucket_id: str, status_code: int):
         assert response.status_code == status_code
         match status_code:
             case 204:
-                assert dummy_objects_handler.buckets[bucket_id] == []
-            case 404:
-                assert response.json() == BUCKET_NOT_FOUND_JSON
+                assert not dummy_objects_handler.buckets.get(bucket_id, [])
             case 422:
                 assert response.json() == INVALID_BUCKET_JSON
 

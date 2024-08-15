@@ -31,21 +31,25 @@ class ObjectsHandler(ObjectsHandlerPort):
     async def does_object_exist(self, bucket_id: str, object_id: str) -> bool:
         """Check if an object exists in the specified bucket.
 
-        Returns `False` if the bucket does not exist or the object is not in the bucket,
-        otherwise `True`.
+        Returns `False` if the object is not in the bucket, otherwise `True`.
 
         Raises:
+        - `BucketNotFoundError`: When the bucket does not exist.
         - `InvalidBucketIdError`: When the bucket ID is invalid.
         - `InvalidObjectIdError`: When the object ID is invalid.
         """
         try:
+            # Checking object existence will not throw an error if the bucket does not
+            # exist so we need to check that first
+            if not await self._storage.does_bucket_exist(bucket_id=bucket_id):
+                raise self.BucketNotFoundError(bucket_id=bucket_id)
+        except ObjectStorageProtocol.BucketIdValidationError as err:
+            raise self.InvalidBucketIdError(bucket_id=bucket_id) from err
+
+        try:
             return await self._storage.does_object_exist(
                 bucket_id=bucket_id, object_id=object_id
             )
-        except ObjectStorageProtocol.BucketNotFoundError:
-            return False
-        except ObjectStorageProtocol.BucketIdValidationError as err:
-            raise self.InvalidBucketIdError(bucket_id=bucket_id) from err
         except ObjectStorageProtocol.ObjectIdValidationError as err:
             raise self.InvalidObjectIdError(object_id=object_id) from err
         except Exception as err:
@@ -55,7 +59,6 @@ class ObjectsHandler(ObjectsHandlerPort):
         """Delete all objects in the specified bucket.
 
         Raises:
-        - `BucketNotFoundError`: When the bucket does not exist.
         - `InvalidBucketIdError`: When the bucket ID is invalid.
         - `ObjectNotFoundError`: When an object is unexpectedly absent.
         """
