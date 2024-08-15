@@ -113,7 +113,8 @@ async def test_unauthenticated_calls(http_method: str, headers: dict[str, str]):
 )
 async def test_authenticated_valid_calls(http_method: str, expected_status_code: int):
     """Verify authenticated calls are successfully passed to the handler."""
-    dummy_docs_handler = DummyDocsHandler()
+    # Create dummy docs handler populated with the db/collection we'll query to avoid errors
+    dummy_docs_handler = DummyDocsHandler(state={"testdb": {"testcollection": {}}})
     async with get_rest_client(DEFAULT_TEST_CONFIG, dummy_docs_handler) as client:
         method_to_call = getattr(client, http_method)
 
@@ -164,11 +165,12 @@ async def test_calls_with_query_params(
     as_dict: Mapping[str, str],
 ):
     """Verify calls with query parameters (GET and DELETE)."""
-    dummy_docs_handler = DummyDocsHandler()
+    # Create dummy docs handler populated with the db/collection we'll query to avoid errors
+    dummy_docs_handler = DummyDocsHandler(state={"testdb": {"testcollection": {}}})
     async with get_rest_client(DEFAULT_TEST_CONFIG, dummy_docs_handler) as client:
         method_to_call = getattr(client, http_method)
         response = await method_to_call(
-            url=f"/documents/testdb.testcollection?{query_string}",
+            url=f"{TEST_URL}?{query_string}",
             headers={"Authorization": VALID_BEARER_TOKEN},
         )
 
@@ -327,3 +329,25 @@ async def test_wildcard_deletion(namespace: str, expected_status_code: int):
             method="delete", db_name=db_name, collection=collection, criteria={}
         )
     ]
+
+
+async def test_missing_db():
+    """Test that a missing DB results in a 404 error."""
+    dummy_docs_handler = DummyDocsHandler(state={"somedb": {"testcollection": {}}})
+    async with get_rest_client(DEFAULT_TEST_CONFIG, dummy_docs_handler) as client:
+        response = await client.get(
+            url=TEST_URL,
+            headers={"Authorization": VALID_BEARER_TOKEN},
+        )
+        assert response.status_code == 404
+
+
+async def test_missing_collection():
+    """Test that a missing collection results in a 404 error."""
+    dummy_docs_handler = DummyDocsHandler(state={"testdb": {"somecollection": {}}})
+    async with get_rest_client(DEFAULT_TEST_CONFIG, dummy_docs_handler) as client:
+        response = await client.get(
+            url=TEST_URL,
+            headers={"Authorization": VALID_BEARER_TOKEN},
+        )
+        assert response.status_code == 404

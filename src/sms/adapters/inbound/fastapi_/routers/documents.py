@@ -136,6 +136,11 @@ async def get_docs(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=str(err),
         ) from err
+    except DocsHandlerPort.NamespaceNotFoundError as err:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(err),
+        ) from err
 
 
 @mongodb_router.put(

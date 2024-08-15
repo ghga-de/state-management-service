@@ -16,6 +16,8 @@
 
 from dataclasses import dataclass
 
+from hexkit.custom_types import JsonObject
+
 from sms.models import Criteria, UpsertionDetails
 from sms.ports.inbound.docs_handler import DocsHandlerPort
 from sms.ports.inbound.objects_handler import ObjectsHandlerPort
@@ -32,18 +34,69 @@ class DocsApiCallArgs:
     upsertion_details: UpsertionDetails | None = None
 
 
+# class DummyDocsDao(DocsDaoPort):
+#     """DocsDao dummy class for unit testing."""
+
+#     def __init__(self, )
+#     async def get(
+#         self, *, db_name: str, collection: str, criteria: Criteria
+#     ) -> list[DocumentType]:
+#         """Get documents satisfying the criteria."""
+#         pass
+
+#     async def upsert(
+#         self,
+#         *,
+#         db_name: str,
+#         collection: str,
+#         id_field: str,
+#         documents: list[DocumentType],
+#     ) -> None:
+#         """Insert or update one or more documents."""
+#         pass
+
+#     async def delete(
+#         self, *, db_name: str, collection: str, criteria: Criteria
+#     ) -> None:
+#         """Delete documents satisfying the criteria."""
+#         pass
+
+#     async def get_db_map_for_prefix(
+#         self, *, prefix: str, db_name: str | None = None
+#     ) -> dict[str, list[str]]:
+#         """Get a dict containing a list of collections for each database, or a specific
+#         database (if `db_name` is provided).
+#         """
+#         pass
+
+
 class DummyDocsHandler(DocsHandlerPort):
     """Dummy DocsHandler implementation for unit testing."""
 
     calls: list[DocsApiCallArgs]
 
-    def __init__(self):
+    def __init__(self, state: dict[str, dict[str, JsonObject]] | None = None):
         self.calls = []
+        self.state: dict[str, dict[str, JsonObject]] = state if state else {}
+
+    def ensure_db_exists(self, db_name: str) -> None:
+        """Check if a database exists."""
+        if not db_name in self.state:
+            raise self.NamespaceNotFoundError(db_name=db_name)
+
+    def ensure_collection_exists(self, db_name: str, collection: str) -> None:
+        """Check if a collection exists."""
+        self.ensure_db_exists(db_name)
+        if not collection in self.state[db_name]:
+            raise self.NamespaceNotFoundError(db_name=db_name, collection=collection)
 
     async def get(self, db_name: str, collection: str, criteria: Criteria):
         """Dummy get implementation. It records the call and returns an empty list.
 
-        Optionally, it raises a PermissionError if the collection is named "permission_error".
+        Raises:
+        - `PermissionError`: if the collection is named "permission_error".
+        - `DbNotFoundError`: if the database does not exist.
+        - `CollectionNotFoundError`: if the collection does not exist.
         """
         call = DocsApiCallArgs(
             method="get", db_name=db_name, collection=collection, criteria=criteria
@@ -51,6 +104,7 @@ class DummyDocsHandler(DocsHandlerPort):
         self.calls.append(call)
         if collection == "permission_error":
             raise PermissionError()
+        self.ensure_collection_exists(db_name, collection)
         return [{}]
 
     async def upsert(
@@ -89,8 +143,8 @@ class DummyDocsHandler(DocsHandlerPort):
 
 
 def check_id_validity(id_: str) -> bool:
-    """Check if an ID is valid."""
-    return id_ != "invalid"
+    """Check if an S3 bucket or object ID is valid."""
+    return (id_ != "invalid") and (3 <= len(id_) <= 63)
 
 
 class DummyObjectsHandler(ObjectsHandlerPort):
