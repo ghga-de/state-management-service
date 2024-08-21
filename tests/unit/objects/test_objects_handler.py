@@ -158,8 +158,8 @@ async def test_list_objects():
     objects_handler = ObjectsHandler(config=DEFAULT_TEST_CONFIG, object_storage=storage)
 
     # Happy path
-    result = await objects_handler.list_objects("bucket")
-    assert result == ["object1"]
+    results = await objects_handler.list_objects("bucket")
+    assert results == ["object1"]
 
     # Nonexistent bucket
     with pytest.raises(objects_handler.BucketNotFoundError):
@@ -171,7 +171,8 @@ async def test_list_objects():
 
     # Empty bucket
     storage.buckets["bucket"] = []
-    result = await objects_handler.list_objects("bucket")
+    results = await objects_handler.list_objects("bucket")
+    assert results == []
 
 
 async def test_misc_error_handling():

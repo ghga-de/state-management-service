@@ -16,7 +16,7 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, status
 
 from sms.adapters.inbound.fastapi_ import dummies
 from sms.adapters.inbound.fastapi_.http_authorization import (
@@ -30,9 +30,9 @@ s3_router = APIRouter()
 
 @s3_router.get(
     "/{bucket_id}/{object_id}",
-    operation_id="check_objects_exists",
-    summary="See if an object exists in the specified bucket.",
-    status_code=200,
+    operation_id="check_object_exists",
+    summary="Check if an object exists in the specified bucket.",
+    status_code=status.HTTP_200_OK,
     response_model=bool,
 )
 async def does_object_exist(
@@ -41,24 +41,30 @@ async def does_object_exist(
     objects_handler: dummies.ObjectsHandlerPortDummy,
     _token: Annotated[TokenAuthContext, require_token],
 ):
-    """Return a list of the objects currently existing in the S3 object storage."""
+    """Return boolean indicating whether or not the object exists in the given bucket."""
     try:
         return await objects_handler.does_object_exist(
             bucket_id=bucket_id, object_id=object_id
         )
     except ObjectsHandlerPort.InvalidIdError as err:
-        raise HTTPException(status_code=422, detail=str(err)) from err
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(err)
+        ) from err
     except ObjectsHandlerPort.BucketNotFoundError as err:
-        raise HTTPException(status_code=404, detail=str(err)) from err
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=str(err)
+        ) from err
     except ObjectsHandlerPort.OperationError as err:
-        raise HTTPException(status_code=500, detail=str(err)) from err
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(err)
+        ) from err
 
 
 @s3_router.get(
     "/{bucket_id}",
     operation_id="get_objects",
     summary="List all objects in the specified bucket.",
-    status_code=200,
+    status_code=status.HTTP_200_OK,
     response_model=list[str],
 )
 async def list_objects(
@@ -66,22 +72,28 @@ async def list_objects(
     objects_handler: dummies.ObjectsHandlerPortDummy,
     _token: Annotated[TokenAuthContext, require_token],
 ):
-    """Return a list of the objects currently existing in the S3 object storage."""
+    """Return a list of the objects that currently exist in the S3 bucket."""
     try:
         return await objects_handler.list_objects(bucket_id=bucket_id)
     except ObjectsHandlerPort.BucketNotFoundError as err:
-        raise HTTPException(status_code=404, detail=str(err)) from err
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=str(err)
+        ) from err
     except ObjectsHandlerPort.InvalidBucketIdError as err:
-        raise HTTPException(status_code=422, detail=str(err)) from err
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(err)
+        ) from err
     except ObjectsHandlerPort.OperationError as err:
-        raise HTTPException(status_code=500, detail=str(err)) from err
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(err)
+        ) from err
 
 
 @s3_router.delete(
     "/{bucket_id}",
     operation_id="empty_bucket",
     summary="Delete all objects in the specified bucket.",
-    status_code=204,
+    status_code=status.HTTP_204_NO_CONTENT,
 )
 async def delete_objects(
     bucket_id: str,
@@ -92,8 +104,12 @@ async def delete_objects(
     try:
         await objects_handler.empty_bucket(bucket_id=bucket_id)
     except ObjectsHandlerPort.InvalidBucketIdError as err:
-        raise HTTPException(status_code=422, detail=str(err)) from err
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(err)
+        ) from err
     except ObjectsHandlerPort.OperationError as err:
-        raise HTTPException(status_code=500, detail=str(err)) from err
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(err)
+        ) from err
     except ObjectsHandlerPort.BucketNotFoundError:
         pass

@@ -35,7 +35,7 @@ class DocsApiCallArgs:
 
 
 class DummyDocsHandler(DocsHandlerPort):
-    """Dummy DocsHandler implementation for unit testing."""
+    """Dummy DocsHandler implementation for testing."""
 
     calls: list[DocsApiCallArgs]
 
@@ -112,7 +112,7 @@ def check_id_validity(id_: str) -> bool:
 
 
 class DummyObjectsHandler(ObjectsHandlerPort):
-    """Dummy ObjectsHandler implementation for unit testing."""
+    """Dummy ObjectsHandler implementation for testing."""
 
     buckets: dict[str, list[str]]  # bucket_id -> object_ids
 

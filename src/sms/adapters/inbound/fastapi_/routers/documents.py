@@ -32,7 +32,7 @@ from sms.ports.inbound.docs_handler import DocsHandlerPort
 mongodb_router = APIRouter()
 
 NAMESPACE_PARAM = Path(
-    pattern=r"^(?P<db>[^.\\/ \"$]{1,64})\.(?P<collection>[^$]{1,255})$",
+    pattern=r"^(?P<db>[^.\\/\s\"$]{1,64})\.(?P<collection>[^$]{1,255})$",
     examples=["my_test_db.users"],
     description="The database and collection to query. Format: db_name.collection",
 )

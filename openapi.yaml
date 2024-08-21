@@ -91,7 +91,7 @@ paths:
           description: 'The database and collection to query. Format: db_name.collection'
           examples:
           - my_test_db.users
-          pattern: ^(?P<db>[^.\\/ \"$]{1,64})\.(?P<collection>[^$]{1,255})$
+          pattern: ^(?P<db>[^.\\/\s\"$]{1,64})\.(?P<collection>[^$]{1,255})$
           title: Namespace
           type: string
       - description: Query parameters used to specify the documents affected by the
@@ -136,7 +136,7 @@ paths:
           description: 'The database and collection to query. Format: db_name.collection'
           examples:
           - my_test_db.users
-          pattern: ^(?P<db>[^.\\/ \"$]{1,64})\.(?P<collection>[^$]{1,255})$
+          pattern: ^(?P<db>[^.\\/\s\"$]{1,64})\.(?P<collection>[^$]{1,255})$
           title: Namespace
           type: string
       - description: Query parameters used to specify the documents affected by the
@@ -189,7 +189,7 @@ paths:
           description: 'The database and collection to query. Format: db_name.collection'
           examples:
           - my_test_db.users
-          pattern: ^(?P<db>[^.\\/ \"$]{1,64})\.(?P<collection>[^$]{1,255})$
+          pattern: ^(?P<db>[^.\\/\s\"$]{1,64})\.(?P<collection>[^$]{1,255})$
           title: Namespace
           type: string
       requestBody:
@@ -255,8 +255,7 @@ paths:
       - StateManagementService
       - sms-s3
     get:
-      description: Return a list of the objects currently existing in the S3 object
-        storage.
+      description: Return a list of the objects that currently exist in the S3 bucket.
       operationId: get_objects
       parameters:
       - in: path
@@ -289,9 +288,9 @@ paths:
       - sms-s3
   /objects/{bucket_id}/{object_id}:
     get:
-      description: Return a list of the objects currently existing in the S3 object
-        storage.
-      operationId: check_objects_exists
+      description: Return boolean indicating whether or not the object exists in the
+        given bucket.
+      operationId: check_object_exists
       parameters:
       - in: path
         name: bucket_id
@@ -310,7 +309,7 @@ paths:
           content:
             application/json:
               schema:
-                title: Response Check Objects Exists
+                title: Response Check Object Exists
                 type: boolean
           description: Successful Response
         '422':
@@ -321,7 +320,7 @@ paths:
           description: Validation Error
       security:
       - HTTPBearer: []
-      summary: See if an object exists in the specified bucket.
+      summary: Check if an object exists in the specified bucket.
       tags:
       - StateManagementService
       - sms-s3
