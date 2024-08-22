@@ -48,10 +48,7 @@ class FederatedS3Fixture:
         config_vals = config.model_dump()
         for alias in config.object_storages:
             node_config = self.nodes[alias].config.model_dump()
-            for prop in ["s3_endpoint_url", "s3_access_key_id", "s3_secret_access_key"]:
-                config_vals["object_storages"][alias]["credentials"][prop] = (
-                    node_config[prop]
-                )
+            config_vals["object_storages"][alias]["credentials"] = node_config
         return Config(**config_vals)
 
     async def populate_dummy_items(self, alias: str, buckets: dict[str, list[str]]):
