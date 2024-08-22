@@ -66,7 +66,7 @@ class ObjectsHandler(ObjectsHandlerPort):
     async def does_object_exist(
         self, alias: str, bucket_id: str, object_id: str
     ) -> bool:
-        """Check if an object exists in the specified bucket.
+        """Check if an object exists in the specified bucket for the given alias.
 
         Returns `False` if the object is not in the bucket, otherwise `True`.
 
@@ -96,7 +96,7 @@ class ObjectsHandler(ObjectsHandlerPort):
             raise self.OperationError() from err
 
     async def empty_bucket(self, alias: str, bucket_id: str) -> None:
-        """Delete all objects in the specified bucket.
+        """Delete all objects in the specified bucket for the given alias.
 
         Raises:
         - `AliasNotConfiguredError`: When the alias does not exist in configuration.
@@ -122,7 +122,7 @@ class ObjectsHandler(ObjectsHandlerPort):
                 raise self.OperationError() from err
 
     async def list_objects(self, alias: str, bucket_id: str) -> list[str]:
-        """List all objects in the specified bucket.
+        """List all objects in the specified bucket for the given alias.
 
         Returns a list of object IDs contained by the bucket.
 

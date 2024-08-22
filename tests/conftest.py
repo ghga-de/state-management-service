@@ -36,7 +36,7 @@ from tests.fixtures.config import get_config
 
 # Move the federation fixtures to hexkit if deemed useful
 class FederatedS3Fixture:
-    """Fixture containing multiple S3 fixtures ."""
+    """Fixture containing multiple S3 fixtures to simulate federated storage."""
 
     def __init__(self, storages: dict[str, S3Fixture]):
         self.nodes = storages
@@ -100,7 +100,7 @@ def _multi_s3_container_fixture() -> Generator[MultiS3ContainerFixture, None, No
 
 
 def get_multi_s3_container_fixture():
-    """Get LocalStack test container fixtures with desired scope and name.
+    """Get a fixture containing multiple LocalStack test containers.
 
     By default, the session scope is used for LocalStack test containers.
     """
@@ -115,9 +115,9 @@ multi_s3_container_fixture = get_multi_s3_container_fixture()
 def _persistent_federated_s3_fixture(
     multi_s3_container: MultiS3ContainerFixture,
 ) -> Generator[FederatedS3Fixture, None, None]:
-    """Fixture function that gets a persistent S3 storage fixture.
+    """Fixture function that gets a persistent FederatedS3Fixture.
 
-    The state of the S3 storage is not cleaned up by the function.
+    The state of each S3 storage in the fixture is not cleaned up.
     """
     storages = {}
     for name, container in multi_s3_container.s3_containers.items():
@@ -130,9 +130,9 @@ def _persistent_federated_s3_fixture(
 async def _clean_federated_s3_fixture(
     multi_s3_container: MultiS3ContainerFixture,
 ) -> AsyncGenerator[FederatedS3Fixture, None]:
-    """Fixture function that gets a clean S3 storage fixture.
+    """Fixture function that gets a clean FederatedS3Fixture instance.
 
-    The state of the S3 storage is cleaned up by the function.
+    The state of each S3 storage is cleaned up before yielding the fixture.
     """
     for federated_s3_fixture in _persistent_federated_s3_fixture(multi_s3_container):
         for s3_fixture in federated_s3_fixture.nodes.values():
