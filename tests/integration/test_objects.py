@@ -15,12 +15,13 @@
 """Integration tests for the /objects endpoints."""
 
 import pytest
-from hexkit.providers.s3.testutils import S3Fixture, temp_file_object
 
-from tests.fixtures.config import get_config
+from tests.conftest import FederatedS3Fixture
+from tests.fixtures.config import DEFAULT_TEST_CONFIG
 from tests.fixtures.utils import VALID_BEARER_TOKEN, get_rest_client
 
 pytestmark = pytest.mark.asyncio()
+DEFAULT_ALIAS = "primary"
 
 
 def bucket_not_found_json(bucket_id: str) -> dict[str, str]:
@@ -38,14 +39,27 @@ def invalid_object_json(object_id: str) -> dict[str, str]:
     return {"detail": f"Object ID '{object_id}' is invalid."}
 
 
-async def populate_items(s3: S3Fixture, buckets: dict[str, list[str]]):
-    """Convenience function to populate the S3 storage with buckets and objects."""
-    # Populate the buckets so even empty buckets are established
-    await s3.populate_buckets([_ for _ in buckets])
-    for bucket, objects in buckets.items():
-        for object in objects:
-            with temp_file_object(bucket, object, 1) as file:
-                await s3.populate_file_objects([file])
+async def test_federated_fixture(federated_s3: FederatedS3Fixture):
+    """Test that the federated S3 fixture actually uses separate S3 instances."""
+    buckets = {
+        "bucket1": ["object1", "object2"],
+        "empty": [],
+    }
+
+    await federated_s3.populate_dummy_items("primary", buckets)
+
+    assert await federated_s3.nodes["primary"].storage.does_object_exist(
+        bucket_id="bucket1", object_id="object1"
+    )
+    assert await federated_s3.nodes["primary"].storage.does_bucket_exist(
+        bucket_id="empty"
+    )
+    assert not await federated_s3.nodes["secondary"].storage.does_object_exist(
+        bucket_id="bucket1", object_id="object1"
+    )
+    assert not await federated_s3.nodes["secondary"].storage.does_bucket_exist(
+        bucket_id="empty"
+    )
 
 
 @pytest.mark.parametrize(
@@ -73,19 +87,18 @@ async def populate_items(s3: S3Fixture, buckets: dict[str, list[str]]):
     ],
 )
 async def test_does_object_exist(
-    s3: S3Fixture,
+    federated_s3: FederatedS3Fixture,
     bucket_id: str,
     object_id: str,
     buckets: dict[str, list[str]],
 ):
     """Test the /objects/{bucket_id}/{object_id} endpoint."""
-    config = get_config([s3.config])
-
-    await populate_items(s3, buckets)
+    config = federated_s3.get_patched_config(config=DEFAULT_TEST_CONFIG)
+    await federated_s3.populate_dummy_items(DEFAULT_ALIAS, buckets)
 
     async with get_rest_client(config=config) as client:
         response = await client.get(
-            f"/objects/{bucket_id}/{object_id}",
+            f"/objects/{DEFAULT_ALIAS}/{bucket_id}/{object_id}",
             headers={"Authorization": VALID_BEARER_TOKEN},
         )
 
@@ -104,9 +117,9 @@ async def test_does_object_exist(
             assert response.json() == (object_id in buckets.get(bucket_id, []))
 
 
-async def test_list_objects(s3: S3Fixture):
+async def test_list_objects(federated_s3: FederatedS3Fixture):
     """Test the GET /objects/{bucket_id} endpoint."""
-    config = get_config([s3.config])
+    config = federated_s3.get_patched_config(config=DEFAULT_TEST_CONFIG)
 
     buckets = {
         "bucket1": ["object1", "object2"],
@@ -120,12 +133,12 @@ async def test_list_objects(s3: S3Fixture):
         ("a", 422),
     ]
 
-    await populate_items(s3, buckets)
+    await federated_s3.populate_dummy_items(DEFAULT_ALIAS, buckets)
 
     async with get_rest_client(config=config) as client:
         for bucket_id, expected_status in statuses:
             response = await client.get(
-                f"/objects/{bucket_id}",
+                f"/objects/{DEFAULT_ALIAS}/{bucket_id}",
                 headers={"Authorization": VALID_BEARER_TOKEN},
             )
 
@@ -138,9 +151,9 @@ async def test_list_objects(s3: S3Fixture):
                 assert response.json() == invalid_bucket_json(bucket_id)
 
 
-async def test_delete_objects(s3: S3Fixture):
+async def test_delete_objects(federated_s3: FederatedS3Fixture):
     """Test the DELETE /objects/{bucket_id} endpoint."""
-    config = get_config([s3.config])
+    config = federated_s3.get_patched_config(config=DEFAULT_TEST_CONFIG)
 
     buckets = {
         "bucket1": ["object1", "object2"],
@@ -154,12 +167,13 @@ async def test_delete_objects(s3: S3Fixture):
         ("a", 422),
     ]
 
-    await populate_items(s3, buckets)
+    await federated_s3.populate_dummy_items(DEFAULT_ALIAS, buckets)
 
     async with get_rest_client(config=config) as client:
+        # Iterate through emptying the buckets above and check the status code
         for bucket_id, expected_status in statuses:
             response = await client.delete(
-                f"/objects/{bucket_id}",
+                f"/objects/{DEFAULT_ALIAS}/{bucket_id}",
                 headers={"Authorization": VALID_BEARER_TOKEN},
             )
 
@@ -167,9 +181,10 @@ async def test_delete_objects(s3: S3Fixture):
             if expected_status == 422:
                 assert response.json() == invalid_bucket_json(bucket_id)
 
+        # Verify that the buckets are indeed empty
         for bucket_id in ["bucket1", "empty"]:
             response = await client.get(
-                f"/objects/{bucket_id}",
+                f"/objects/{DEFAULT_ALIAS}/{bucket_id}",
                 headers={"Authorization": VALID_BEARER_TOKEN},
             )
             assert response.status_code == 200

@@ -55,67 +55,9 @@ sms --help
 ### Parameters
 
 The service requires the following configuration parameters:
-- **`s3_endpoint_url`** *(string, required)*: URL to the S3 API.
+- **`object_storages`** *(object, required)*: Can contain additional properties.
 
-
-  Examples:
-
-  ```json
-  "http://localhost:4566"
-  ```
-
-
-- **`s3_access_key_id`** *(string, required)*: Part of credentials for login into the S3 service. See: https://boto3.amazonaws.com/v1/documentation/api/latest/guide/credentials.html.
-
-
-  Examples:
-
-  ```json
-  "my-access-key-id"
-  ```
-
-
-- **`s3_secret_access_key`** *(string, format: password, required)*: Part of credentials for login into the S3 service. See: https://boto3.amazonaws.com/v1/documentation/api/latest/guide/credentials.html.
-
-
-  Examples:
-
-  ```json
-  "my-secret-access-key"
-  ```
-
-
-- **`s3_session_token`**: Part of credentials for login into the S3 service. See: https://boto3.amazonaws.com/v1/documentation/api/latest/guide/credentials.html. Default: `null`.
-
-  - **Any of**
-
-    - *string, format: password*
-
-    - *null*
-
-
-  Examples:
-
-  ```json
-  "my-session-token"
-  ```
-
-
-- **`aws_config_ini`**: Path to a config file for specifying more advanced S3 parameters. This should follow the format described here: https://boto3.amazonaws.com/v1/documentation/api/latest/guide/configuration.html#using-a-configuration-file. Default: `null`.
-
-  - **Any of**
-
-    - *string, format: path*
-
-    - *null*
-
-
-  Examples:
-
-  ```json
-  "~/.aws/config"
-  ```
-
+  - **Additional properties**: Refer to *[#/$defs/S3ObjectStorageNodeConfig](#%24defs/S3ObjectStorageNodeConfig)*.
 
 - **`token_hashes`** *(array, required)*: List of token hashes corresponding to the tokens that can be used to authenticate calls to this service. Hashes are made with SHA-256.
 
@@ -354,6 +296,96 @@ The service requires the following configuration parameters:
   false
   ```
 
+
+## Definitions
+
+
+- <a id="%24defs/S3Config"></a>**`S3Config`** *(object)*: S3-specific config params.
+Inherit your config class from this class if you need
+to talk to an S3 service in the backend.<br>  Args:
+    s3_endpoint_url (str): The URL to the S3 endpoint.
+    s3_access_key_id (str):
+        Part of credentials for login into the S3 service. See:
+        https://boto3.amazonaws.com/v1/documentation/api/latest/guide/credentials.html
+    s3_secret_access_key (str):
+        Part of credentials for login into the S3 service. See:
+        https://boto3.amazonaws.com/v1/documentation/api/latest/guide/credentials.html
+    s3_session_token (Optional[str]):
+        Optional part of credentials for login into the S3 service. See:
+        https://boto3.amazonaws.com/v1/documentation/api/latest/guide/credentials.html
+    aws_config_ini (Optional[Path]):
+        Path to a config file for specifying more advanced S3 parameters.
+        This should follow the format described here:
+        https://boto3.amazonaws.com/v1/documentation/api/latest/guide/configuration.html#using-a-configuration-file
+        Defaults to None. Cannot contain additional properties.
+
+  - **`s3_endpoint_url`** *(string, required)*: URL to the S3 API.
+
+
+    Examples:
+
+    ```json
+    "http://localhost:4566"
+    ```
+
+
+  - **`s3_access_key_id`** *(string, required)*: Part of credentials for login into the S3 service. See: https://boto3.amazonaws.com/v1/documentation/api/latest/guide/credentials.html.
+
+
+    Examples:
+
+    ```json
+    "my-access-key-id"
+    ```
+
+
+  - **`s3_secret_access_key`** *(string, format: password, required)*: Part of credentials for login into the S3 service. See: https://boto3.amazonaws.com/v1/documentation/api/latest/guide/credentials.html.
+
+
+    Examples:
+
+    ```json
+    "my-secret-access-key"
+    ```
+
+
+  - **`s3_session_token`**: Part of credentials for login into the S3 service. See: https://boto3.amazonaws.com/v1/documentation/api/latest/guide/credentials.html. Default: `null`.
+
+    - **Any of**
+
+      - *string, format: password*
+
+      - *null*
+
+
+    Examples:
+
+    ```json
+    "my-session-token"
+    ```
+
+
+  - **`aws_config_ini`**: Path to a config file for specifying more advanced S3 parameters. This should follow the format described here: https://boto3.amazonaws.com/v1/documentation/api/latest/guide/configuration.html#using-a-configuration-file. Default: `null`.
+
+    - **Any of**
+
+      - *string, format: path*
+
+      - *null*
+
+
+    Examples:
+
+    ```json
+    "~/.aws/config"
+    ```
+
+
+- <a id="%24defs/S3ObjectStorageNodeConfig"></a>**`S3ObjectStorageNodeConfig`** *(object)*: Configuration for one specific object storage node and one bucket in it.<br>  The bucket is the main bucket that the service is responsible for. Cannot contain additional properties.
+
+  - **`bucket`** *(string, required)*
+
+  - **`credentials`**: Refer to *[#/$defs/S3Config](#%24defs/S3Config)*.
 
 
 ### Usage:

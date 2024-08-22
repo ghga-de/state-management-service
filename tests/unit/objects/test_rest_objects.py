@@ -33,6 +33,11 @@ BUCKET_NOT_FOUND_JSON = {
     "detail": "Bucket with ID 'non-existent-bucket' does not exist."
 }
 
+BASIC_STORAGE_MAP: dict[str, list[str]] = {"bucket": ["object1"]}
+MULTI_OBJECT_MAP: dict[str, list[str]] = {"bucket": ["object1", "object2", "object3"]}
+EMPTY_STORAGE_MAP: dict[str, list[str]] = {"empty-bucket": []}
+DEFAULT_ALIAS = "primary"
+
 
 @pytest.mark.parametrize(
     "bucket_id, object_id, expected_result, status_code",
@@ -65,14 +70,16 @@ async def test_does_object_exist(
     """
     mock_docs_handler = AsyncMock()  # don't declare spec (to keep imports cleaner)
 
-    dummy_objects_handler = DummyObjectsHandler(buckets={"bucket": ["object1"]})
+    dummy_objects_handler = DummyObjectsHandler(
+        storages={DEFAULT_ALIAS: BASIC_STORAGE_MAP}
+    )
     async with get_rest_client(
         config=DEFAULT_TEST_CONFIG,
         docs_handler_override=mock_docs_handler,
         objects_handler_override=dummy_objects_handler,
     ) as client:
         response = await client.get(
-            f"{TEST_URL}/{bucket_id}/{object_id}",
+            f"{TEST_URL}/{DEFAULT_ALIAS}/{bucket_id}/{object_id}",
             headers={"Authorization": VALID_BEARER_TOKEN},
         )
 
@@ -103,7 +110,7 @@ async def test_list_objects(
     """
     mock_docs_handler = AsyncMock()
     dummy_objects_handler = DummyObjectsHandler(
-        buckets={"bucket": ["object1"], "empty-bucket": []}
+        storages={DEFAULT_ALIAS: {**BASIC_STORAGE_MAP, **EMPTY_STORAGE_MAP}}
     )
     async with get_rest_client(
         config=DEFAULT_TEST_CONFIG,
@@ -111,7 +118,7 @@ async def test_list_objects(
         objects_handler_override=dummy_objects_handler,
     ) as client:
         response = await client.get(
-            f"{TEST_URL}/{bucket_id}",
+            f"{TEST_URL}/{DEFAULT_ALIAS}/{bucket_id}",
             headers={"Authorization": VALID_BEARER_TOKEN},
         )
 
@@ -141,7 +148,7 @@ async def test_delete_objects(bucket_id: str, status_code: int):
 
     # establish dummy with multiple objects
     dummy_objects_handler = DummyObjectsHandler(
-        buckets={"bucket": ["object1", "object2", "object3"], "empty-bucket": []}
+        storages={DEFAULT_ALIAS: {**MULTI_OBJECT_MAP, **EMPTY_STORAGE_MAP}}
     )
     async with get_rest_client(
         config=DEFAULT_TEST_CONFIG,
@@ -149,14 +156,14 @@ async def test_delete_objects(bucket_id: str, status_code: int):
         objects_handler_override=dummy_objects_handler,
     ) as client:
         response = await client.delete(
-            f"{TEST_URL}/{bucket_id}",
+            f"{TEST_URL}/{DEFAULT_ALIAS}/{bucket_id}",
             headers={"Authorization": VALID_BEARER_TOKEN},
         )
 
         assert response.status_code == status_code
         match status_code:
             case 204:
-                assert not dummy_objects_handler.buckets.get(bucket_id, [])
+                assert not dummy_objects_handler.storages.get(bucket_id, [])
             case 422:
                 assert response.json() == INVALID_BUCKET_JSON
 
@@ -164,23 +171,27 @@ async def test_delete_objects(bucket_id: str, status_code: int):
 async def test_auth():
     """Test that all /objects endpoints require authentication."""
     mock_docs_handler = AsyncMock()
-    dummy_objects_handler = DummyObjectsHandler({"bucket": ["object1"]})
+    dummy_objects_handler = DummyObjectsHandler(
+        storages={DEFAULT_ALIAS: BASIC_STORAGE_MAP}
+    )
     async with get_rest_client(
         config=DEFAULT_TEST_CONFIG,
         docs_handler_override=mock_docs_handler,
         objects_handler_override=dummy_objects_handler,
     ) as client:
-        response = await client.get(f"{TEST_URL}/bucket/object", headers={})
+        response = await client.get(
+            f"{TEST_URL}/{DEFAULT_ALIAS}/bucket/object", headers={}
+        )
 
         unauthenticated_json = {"detail": "Not authenticated"}
         assert response.status_code == 401
         assert response.json() == unauthenticated_json
 
-        response = await client.get(f"{TEST_URL}/bucket", headers={})
+        response = await client.get(f"{TEST_URL}/{DEFAULT_ALIAS}/bucket", headers={})
         assert response.status_code == 401
         assert response.json() == unauthenticated_json
 
-        response = await client.delete(f"{TEST_URL}/bucket", headers={})
+        response = await client.delete(f"{TEST_URL}/{DEFAULT_ALIAS}/bucket", headers={})
         assert response.status_code == 401
         assert response.json() == unauthenticated_json
 
@@ -189,7 +200,7 @@ async def test_operation_errors():
     """Verify that operation errors generate a 500 response."""
     mock_docs_handler = AsyncMock()
     dummy_objects_handler = DummyObjectsHandler(
-        buckets={"bucket": ["object1"]}, raise_operation_error=True
+        storages={DEFAULT_ALIAS: BASIC_STORAGE_MAP}, raise_operation_error=True
     )
     async with get_rest_client(
         config=DEFAULT_TEST_CONFIG,
@@ -197,7 +208,8 @@ async def test_operation_errors():
         objects_handler_override=dummy_objects_handler,
     ) as client:
         response = await client.get(
-            f"{TEST_URL}/bucket/object", headers={"Authorization": VALID_BEARER_TOKEN}
+            f"{TEST_URL}/{DEFAULT_ALIAS}/bucket/object",
+            headers={"Authorization": VALID_BEARER_TOKEN},
         )
         operation_error_json = {
             "detail": "An error occurred while performing the object-storage operation."
@@ -206,13 +218,51 @@ async def test_operation_errors():
         assert response.json() == operation_error_json
 
         response = await client.get(
-            f"{TEST_URL}/bucket", headers={"Authorization": VALID_BEARER_TOKEN}
+            f"{TEST_URL}/{DEFAULT_ALIAS}/bucket",
+            headers={"Authorization": VALID_BEARER_TOKEN},
         )
         assert response.status_code == 500
         assert response.json() == operation_error_json
 
         response = await client.delete(
-            f"{TEST_URL}/bucket", headers={"Authorization": VALID_BEARER_TOKEN}
+            f"{TEST_URL}/{DEFAULT_ALIAS}/bucket",
+            headers={"Authorization": VALID_BEARER_TOKEN},
         )
         assert response.status_code == 500
         assert response.json() == operation_error_json
+
+
+async def test_alias_not_configured():
+    """Test that the right error is raised in each method when the alias is not configured."""
+    mock_docs_handler = AsyncMock()
+    dummy_objects_handler = DummyObjectsHandler(
+        storages={DEFAULT_ALIAS: BASIC_STORAGE_MAP}
+    )
+    async with get_rest_client(
+        config=DEFAULT_TEST_CONFIG,
+        docs_handler_override=mock_docs_handler,
+        objects_handler_override=dummy_objects_handler,
+    ) as client:
+        response = await client.get(
+            f"{TEST_URL}/non-existent-alias/bucket/object",
+            headers={"Authorization": VALID_BEARER_TOKEN},
+        )
+        alias_not_configured_json = {
+            "detail": "The object storage alias 'non-existent-alias' is not configured."
+        }
+        assert response.status_code == 404
+        assert response.json() == alias_not_configured_json
+
+        response = await client.get(
+            f"{TEST_URL}/non-existent-alias/bucket",
+            headers={"Authorization": VALID_BEARER_TOKEN},
+        )
+        assert response.status_code == 404
+        assert response.json() == alias_not_configured_json
+
+        response = await client.delete(
+            f"{TEST_URL}/non-existent-alias/bucket",
+            headers={"Authorization": VALID_BEARER_TOKEN},
+        )
+        assert response.status_code == 404
+        assert response.json() == alias_not_configured_json

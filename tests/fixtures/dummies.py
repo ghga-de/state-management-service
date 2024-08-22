@@ -20,7 +20,7 @@ from hexkit.custom_types import JsonObject
 
 from sms.models import Criteria, UpsertionDetails
 from sms.ports.inbound.docs_handler import DocsHandlerPort
-from sms.ports.inbound.objects_handler import ObjectsHandlerPort
+from sms.ports.inbound.objects_handler import ObjectsHandlerPort, S3ObjectStoragesPort
 
 
 @dataclass
@@ -114,14 +114,14 @@ def check_id_validity(id_: str) -> bool:
 class DummyObjectsHandler(ObjectsHandlerPort):
     """Dummy ObjectsHandler implementation for testing."""
 
-    buckets: dict[str, list[str]]  # bucket_id -> object_ids
+    storages: dict[str, dict[str, list[str]]]  # alias -> bucket_id -> object_ids
 
     def __init__(
         self,
-        buckets: dict[str, list[str]] | None = None,
+        storages: dict[str, dict[str, list[str]]] | None = None,
         raise_operation_error: bool = False,
     ):
-        self.buckets = buckets if buckets else {}
+        self.storages = storages if storages else {}
         self.raise_operation_error = raise_operation_error
 
     def _raise_op_error_if_set(self):
@@ -139,46 +139,61 @@ class DummyObjectsHandler(ObjectsHandlerPort):
         if not check_id_validity(object_id):
             raise self.InvalidObjectIdError(object_id=object_id)
 
-    async def does_object_exist(self, bucket_id: str, object_id: str) -> bool:
+    def _for_alias(self, alias: str) -> dict[str, list[str]]:
+        """Get the storage for a specific alias."""
+        try:
+            return self.storages[alias]
+        except KeyError as err:
+            raise S3ObjectStoragesPort.AliasNotConfiguredError(alias=alias) from err
+
+    async def does_object_exist(
+        self, alias: str, bucket_id: str, object_id: str
+    ) -> bool:
         """Check if an object exists in the specified bucket.
 
         Returns a bool indicating whether or not the object exists in the given bucket.
 
         Raises:
+        - `AliasNotConfiguredError`: If the alias is not configured.
         - `OperationError`: If `raise_operation_error` is set.
         - `InvalidBucketIdError`: If the bucket ID is literally "invalid".
         - `InvalidObjectIdError`: If the object ID is literally "invalid".
         """
         self._raise_op_error_if_set()
+        storage = self._for_alias(alias)
         self._validate_bucket_id(bucket_id)
         self._validate_object_id(object_id)
-        return object_id in self.buckets.get(bucket_id, [])
+        return object_id in storage.get(bucket_id, [])
 
-    async def empty_bucket(self, bucket_id: str) -> None:
+    async def empty_bucket(self, alias: str, bucket_id: str) -> None:
         """Delete all objects in the specified bucket.
 
         Raises:
+        - `AliasNotConfiguredError`: If the alias is not configured.
         - `OperationError`: If `raise_operation_error` is set.
         - `BucketNotFoundError`: If the bucket does not exist.
         """
         self._raise_op_error_if_set()
+        storage = self._for_alias(alias)
         self._validate_bucket_id(bucket_id)
         try:
-            self.buckets[bucket_id].clear()
+            storage[bucket_id].clear()
         except KeyError as err:
             raise self.BucketNotFoundError(bucket_id=bucket_id) from err
 
-    async def list_objects(self, bucket_id: str) -> list[str]:
+    async def list_objects(self, alias: str, bucket_id: str) -> list[str]:
         """List all objects in the specified bucket.
 
         Raises:
+        - `AliasNotConfiguredError`: If the alias is not configured.
         - `OperationError`: If `raise_operation_error` is set.
         - `BucketNotFoundError`: If the bucket does not exist.
         - `InvalidBucketIdError`: If the bucket ID is literally "invalid".
         """
         self._raise_op_error_if_set()
+        storage = self._for_alias(alias)
         self._validate_bucket_id(bucket_id)
         try:
-            return self.buckets[bucket_id]
+            return storage[bucket_id]
         except KeyError as err:
             raise self.BucketNotFoundError(bucket_id=bucket_id) from err

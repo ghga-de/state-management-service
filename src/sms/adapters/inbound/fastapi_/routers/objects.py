@@ -23,19 +23,20 @@ from sms.adapters.inbound.fastapi_.http_authorization import (
     TokenAuthContext,
     require_token,
 )
-from sms.ports.inbound.objects_handler import ObjectsHandlerPort
+from sms.ports.inbound.objects_handler import ObjectsHandlerPort, S3ObjectStoragesPort
 
 s3_router = APIRouter()
 
 
 @s3_router.get(
-    "/{bucket_id}/{object_id}",
+    "/{alias}/{bucket_id}/{object_id}",
     operation_id="check_object_exists",
     summary="Check if an object exists in the specified bucket.",
     status_code=status.HTTP_200_OK,
     response_model=bool,
 )
 async def does_object_exist(
+    alias: str,
     bucket_id: str,
     object_id: str,
     objects_handler: dummies.ObjectsHandlerPortDummy,
@@ -44,13 +45,16 @@ async def does_object_exist(
     """Return boolean indicating whether or not the object exists in the given bucket."""
     try:
         return await objects_handler.does_object_exist(
-            bucket_id=bucket_id, object_id=object_id
+            alias=alias, bucket_id=bucket_id, object_id=object_id
         )
     except ObjectsHandlerPort.InvalidIdError as err:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(err)
         ) from err
-    except ObjectsHandlerPort.BucketNotFoundError as err:
+    except (
+        S3ObjectStoragesPort.AliasNotConfiguredError,
+        ObjectsHandlerPort.BucketNotFoundError,
+    ) as err:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=str(err)
         ) from err
@@ -61,21 +65,25 @@ async def does_object_exist(
 
 
 @s3_router.get(
-    "/{bucket_id}",
+    "/{alias}/{bucket_id}",
     operation_id="get_objects",
     summary="List all objects in the specified bucket.",
     status_code=status.HTTP_200_OK,
     response_model=list[str],
 )
 async def list_objects(
+    alias: str,
     bucket_id: str,
     objects_handler: dummies.ObjectsHandlerPortDummy,
     _token: Annotated[TokenAuthContext, require_token],
 ):
     """Return a list of the objects that currently exist in the S3 bucket."""
     try:
-        return await objects_handler.list_objects(bucket_id=bucket_id)
-    except ObjectsHandlerPort.BucketNotFoundError as err:
+        return await objects_handler.list_objects(alias=alias, bucket_id=bucket_id)
+    except (
+        S3ObjectStoragesPort.AliasNotConfiguredError,
+        ObjectsHandlerPort.BucketNotFoundError,
+    ) as err:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=str(err)
         ) from err
@@ -90,19 +98,24 @@ async def list_objects(
 
 
 @s3_router.delete(
-    "/{bucket_id}",
+    "/{alias}/{bucket_id}",
     operation_id="empty_bucket",
     summary="Delete all objects in the specified bucket.",
     status_code=status.HTTP_204_NO_CONTENT,
 )
 async def delete_objects(
+    alias: str,
     bucket_id: str,
     objects_handler: dummies.ObjectsHandlerPortDummy,
     _token: Annotated[TokenAuthContext, require_token],
 ):
     """Delete all objects in the specified bucket."""
     try:
-        await objects_handler.empty_bucket(bucket_id=bucket_id)
+        await objects_handler.empty_bucket(alias=alias, bucket_id=bucket_id)
+    except S3ObjectStoragesPort.AliasNotConfiguredError as err:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=str(err)
+        ) from err
     except ObjectsHandlerPort.InvalidBucketIdError as err:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(err)

@@ -228,11 +228,17 @@ paths:
       tags:
       - StateManagementService
       - health
-  /objects/{bucket_id}:
+  /objects/{alias}/{bucket_id}:
     delete:
       description: Delete all objects in the specified bucket.
       operationId: empty_bucket
       parameters:
+      - in: path
+        name: alias
+        required: true
+        schema:
+          title: Alias
+          type: string
       - in: path
         name: bucket_id
         required: true
@@ -258,6 +264,12 @@ paths:
       description: Return a list of the objects that currently exist in the S3 bucket.
       operationId: get_objects
       parameters:
+      - in: path
+        name: alias
+        required: true
+        schema:
+          title: Alias
+          type: string
       - in: path
         name: bucket_id
         required: true
@@ -286,12 +298,18 @@ paths:
       tags:
       - StateManagementService
       - sms-s3
-  /objects/{bucket_id}/{object_id}:
+  /objects/{alias}/{bucket_id}/{object_id}:
     get:
       description: Return boolean indicating whether or not the object exists in the
         given bucket.
       operationId: check_object_exists
       parameters:
+      - in: path
+        name: alias
+        required: true
+        schema:
+          title: Alias
+          type: string
       - in: path
         name: bucket_id
         required: true

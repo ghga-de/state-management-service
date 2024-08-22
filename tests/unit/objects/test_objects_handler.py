@@ -18,13 +18,17 @@ from contextlib import nullcontext
 from unittest.mock import AsyncMock
 
 import pytest
+from ghga_service_commons.utils.multinode_storage import S3ObjectStoragesConfig
 from hexkit.protocols.objstorage import ObjectStorageProtocol
 from hexkit.providers.s3 import S3ObjectStorage
 
 from sms.core.objects_handler import ObjectsHandler
+from sms.ports.inbound.objects_handler import S3ObjectStoragesPort
 from tests.fixtures.config import DEFAULT_TEST_CONFIG
 
 pytestmark = pytest.mark.asyncio()
+
+DEFAULT_ALIAS = "primary"
 
 
 def check_id_validity(id_: str):
@@ -88,6 +92,23 @@ def get_storage_mock():
     return mock
 
 
+class DummyObjectStorages(S3ObjectStoragesPort):
+    """Dummy S3ObjectStoragesPort implementation for testing.
+
+    It will use the mock object storage instance for all operations.
+    """
+
+    def __init__(self, config: S3ObjectStoragesConfig):
+        self._config = config
+        self._storages = {alias: get_storage_mock() for alias in config.object_storages}
+
+    def for_alias(self, alias: str = "primary"):
+        """Get the object storage instance for a specific alias."""
+        if alias not in self._storages:
+            raise self.AliasNotConfiguredError(alias=alias)
+        return self._storages[alias]
+
+
 @pytest.mark.parametrize(
     "bucket_id, object_id, expected_result, error",
     [
@@ -116,11 +137,15 @@ async def test_does_object_exist(
     Errors should only be raised for invalid bucket/object IDs. If the bucket does not
     exist, the result should be False.
     """
-    storage = get_storage_mock()
-    objects_handler = ObjectsHandler(config=DEFAULT_TEST_CONFIG, object_storage=storage)
+    storages = DummyObjectStorages(config=DEFAULT_TEST_CONFIG)
+    objects_handler = ObjectsHandler(
+        config=DEFAULT_TEST_CONFIG, object_storages=storages
+    )
 
     with pytest.raises(error) if error else nullcontext():
-        result = await objects_handler.does_object_exist(bucket_id, object_id)
+        result = await objects_handler.does_object_exist(
+            DEFAULT_ALIAS, bucket_id, object_id
+        )
         assert result == expected_result
 
 
@@ -129,24 +154,26 @@ async def test_empty_bucket():
 
     Test for happy path, invalid bucket ID, non-existent bucket, and empty bucket.
     """
-    storage = get_storage_mock()
-    objects_handler = ObjectsHandler(config=DEFAULT_TEST_CONFIG, object_storage=storage)
+    storages = DummyObjectStorages(config=DEFAULT_TEST_CONFIG)
+    objects_handler = ObjectsHandler(
+        config=DEFAULT_TEST_CONFIG, object_storages=storages
+    )
 
     # happy path
-    await objects_handler.empty_bucket("bucket")
-    assert storage.buckets["bucket"] == []
+    await objects_handler.empty_bucket(DEFAULT_ALIAS, "bucket")
+    assert storages.for_alias(DEFAULT_ALIAS).buckets["bucket"] == []
 
     # nonexistent bucket
     with pytest.raises(objects_handler.BucketNotFoundError):
-        await objects_handler.empty_bucket("non-existent-bucket")
+        await objects_handler.empty_bucket(DEFAULT_ALIAS, "non-existent-bucket")
 
     # invalid bucket name
     with pytest.raises(objects_handler.InvalidBucketIdError):
-        await objects_handler.empty_bucket("a")
+        await objects_handler.empty_bucket(DEFAULT_ALIAS, "a")
 
     # already empty bucket
-    await objects_handler.empty_bucket("bucket")
-    assert storage.buckets["bucket"] == []
+    await objects_handler.empty_bucket(DEFAULT_ALIAS, "bucket")
+    assert storages.for_alias(DEFAULT_ALIAS).buckets["bucket"] == []
 
 
 async def test_list_objects():
@@ -154,46 +181,70 @@ async def test_list_objects():
 
     Test for happy path, invalid bucket ID, non-existent bucket, and empty bucket.
     """
-    storage = get_storage_mock()
-    objects_handler = ObjectsHandler(config=DEFAULT_TEST_CONFIG, object_storage=storage)
+    storages = DummyObjectStorages(config=DEFAULT_TEST_CONFIG)
+    objects_handler = ObjectsHandler(
+        config=DEFAULT_TEST_CONFIG, object_storages=storages
+    )
 
     # Happy path
-    results = await objects_handler.list_objects("bucket")
+    results = await objects_handler.list_objects(DEFAULT_ALIAS, "bucket")
     assert results == ["object1"]
 
     # Nonexistent bucket
     with pytest.raises(objects_handler.BucketNotFoundError):
-        await objects_handler.list_objects("non-existent-bucket")
+        await objects_handler.list_objects(DEFAULT_ALIAS, "non-existent-bucket")
 
     # Invalid bucket name
     with pytest.raises(objects_handler.InvalidBucketIdError):
-        await objects_handler.list_objects("a")
+        await objects_handler.list_objects(DEFAULT_ALIAS, "a")
 
     # Empty bucket
-    storage.buckets["bucket"] = []
-    results = await objects_handler.list_objects("bucket")
+    storages.for_alias(DEFAULT_ALIAS).buckets["bucket"] = []
+    results = await objects_handler.list_objects(DEFAULT_ALIAS, "bucket")
     assert results == []
+
+
+async def test_bad_alias():
+    """Test that the right error is raised in each method when the alias is not configured."""
+    storages = DummyObjectStorages(config=DEFAULT_TEST_CONFIG)
+    objects_handler = ObjectsHandler(
+        config=DEFAULT_TEST_CONFIG, object_storages=storages
+    )
+
+    with pytest.raises(storages.AliasNotConfiguredError):
+        await objects_handler.does_object_exist(
+            "non-existent-alias", "bucket", "object1"
+        )
+
+    with pytest.raises(storages.AliasNotConfiguredError):
+        await objects_handler.empty_bucket("non-existent-alias", "bucket")
+
+    with pytest.raises(storages.AliasNotConfiguredError):
+        await objects_handler.list_objects("non-existent-alias", "bucket")
 
 
 async def test_misc_error_handling():
     """Verify that unexpected errors are re-raised as OperationError."""
-    storage = get_storage_mock()
+    storages = DummyObjectStorages(config=DEFAULT_TEST_CONFIG)
+    storage = storages.for_alias(DEFAULT_ALIAS)
     storage.does_object_exist.side_effect = RuntimeError
     storage.delete_object.side_effect = RuntimeError
     storage.list_all_object_ids.side_effect = RuntimeError
-    objects_handler = ObjectsHandler(config=DEFAULT_TEST_CONFIG, object_storage=storage)
+    objects_handler = ObjectsHandler(
+        config=DEFAULT_TEST_CONFIG, object_storages=storages
+    )
 
     # Error during does_object_exist
     storage.does_object_exist.side_effect = Exception
     with pytest.raises(objects_handler.OperationError):
-        await objects_handler.does_object_exist("bucket", "object1")
+        await objects_handler.does_object_exist(DEFAULT_ALIAS, "bucket", "object1")
 
     # Error during delete_object
     storage.delete_object.side_effect = Exception
     with pytest.raises(objects_handler.OperationError):
-        await objects_handler.empty_bucket("bucket")
+        await objects_handler.empty_bucket(DEFAULT_ALIAS, "bucket")
 
     # Error during list_objects
     storage.list_all_object_ids.side_effect = Exception
     with pytest.raises(objects_handler.OperationError):
-        await objects_handler.list_objects("bucket")
+        await objects_handler.list_objects(DEFAULT_ALIAS, "bucket")

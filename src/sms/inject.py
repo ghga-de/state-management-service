@@ -19,14 +19,13 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from ghga_service_commons.utils.context import asyncnullcontext
-from hexkit.providers.s3 import S3ObjectStorage
 
 from sms.adapters.inbound.fastapi_ import dummies
 from sms.adapters.inbound.fastapi_.configure import get_configured_app
 from sms.adapters.outbound.docs_dao import DocsDao
 from sms.config import Config
 from sms.core.docs_handler import DocsHandler
-from sms.core.objects_handler import ObjectsHandler
+from sms.core.objects_handler import ObjectsHandler, S3ObjectStorages
 from sms.ports.inbound.docs_handler import DocsHandlerPort
 from sms.ports.inbound.objects_handler import ObjectsHandlerPort
 
@@ -53,9 +52,9 @@ def prepare_docs_handler_with_override(
 
 
 def prepare_objects_handler(*, config: Config) -> ObjectsHandlerPort:
-    """Prepare the ObjectsHandler with an S3ObjectStorage instance."""
-    object_storage = S3ObjectStorage(config=config)
-    return ObjectsHandler(config=config, object_storage=object_storage)
+    """Prepare the ObjectsHandler with an S3ObjectStorages instance."""
+    object_storages = S3ObjectStorages(config=config)
+    return ObjectsHandler(config=config, object_storages=object_storages)
 
 
 def prepare_objects_handler_with_override(
