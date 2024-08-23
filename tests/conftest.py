@@ -81,8 +81,11 @@ class MultiS3ContainerFixture:
     def __init__(self, s3_containers: dict[str, S3ContainerFixture]):
         self.s3_containers = s3_containers
 
+    def __enter__(self):
+        """Enter the context manager and start the S3 containers."""
         for container in self.s3_containers.values():
             container.__enter__()
+        return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         """Exit the context manager and clean up the S3 containers."""
@@ -96,7 +99,8 @@ def _multi_s3_container_fixture() -> Generator[MultiS3ContainerFixture, None, No
     s3_containers = {
         name: S3ContainerFixture(name=name) for name in config.object_storages
     }
-    yield MultiS3ContainerFixture(s3_containers)
+    with MultiS3ContainerFixture(s3_containers) as multi_s3_container:
+        yield multi_s3_container
 
 
 def get_multi_s3_container_fixture():
