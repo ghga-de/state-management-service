@@ -103,3 +103,18 @@ async def test_unhandled_error():
         mock.clear_topics.assert_called_once()
 
         assert response.status_code == 500
+
+
+async def test_unauthenticated_calls():
+    """Test unauthenticated calls, which should result in a 401 Unauthorized code."""
+    mock = AsyncMock(spec=EventsHandlerPort)
+
+    async with get_rest_client_with_mocks(
+        DEFAULT_TEST_CONFIG, events_handler_override=mock
+    ) as rest_client:
+        response = await rest_client.delete("/events/")
+
+        mock.clear_topics.assert_not_called()
+
+        assert response.status_code == 401
+        assert response.json() == {"detail": "Not authenticated"}
