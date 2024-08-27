@@ -110,19 +110,17 @@ async def test_clear_topics_happy(
         )
         await consumer.start()
 
-        # Calculate how many records *should* be left
-        num_records_remaining = (
-            len(events_to_publish)
-            - len(
-                [
-                    event
-                    for event in events_to_publish
-                    if event["topic"] in topics_to_clear
-                ]
-            )
-            if topics_to_clear
-            else 0
+        # Get a list of the topics cleared -- an empty topics_to_clear means all topics
+        # (ignore internal topics for the test)
+        cleared_topics = topics_to_clear if topics_to_clear else published_topics
+
+        # Calculate how many events should have been deleted
+        affected_event_count = len(
+            [event for event in events_to_publish if event["topic"] in cleared_topics]
         )
+
+        # Calculate how many events should remain
+        num_records_remaining = len(events_to_publish) - affected_event_count
 
         # Verify that the topics have been cleared
         prefetched = await consumer.getmany(timeout_ms=500)
@@ -130,4 +128,4 @@ async def test_clear_topics_happy(
             records = next(iter(prefetched.values()))
             assert len(records) == num_records_remaining
             for record in records:
-                assert record.topic not in topics_to_clear
+                assert record.topic not in cleared_topics
