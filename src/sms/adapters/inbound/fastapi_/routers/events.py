@@ -31,10 +31,9 @@ KAFKA_TOPIC_PATTERN = r"^[a-zA-Z0-9._-]+$"
 kafka_router = APIRouter()
 
 
-def validate_kafka_topic_name(topic: str) -> None:
-    """Validate a Kafka topic name, raising a ValueError if invalid."""
-    if not re.match(KAFKA_TOPIC_PATTERN, topic):
-        raise ValueError(f"Invalid topic name: {topic}")
+def is_topic_valid(topic: str) -> bool:
+    """Validate a Kafka topic name. Return True if valid, False otherwise."""
+    return re.match(KAFKA_TOPIC_PATTERN, topic) is not None
 
 
 @kafka_router.delete(
@@ -55,7 +54,7 @@ async def clear_topics(
         description="The topic(s) to clear.",
     ),
     exclude_internal: bool = Query(
-        True, description="Whether to exclude internal topics."
+        default=True, description="Whether to exclude internal topics."
     ),
 ) -> None:
     """Clear messages from given topic(s).
@@ -71,13 +70,12 @@ async def clear_topics(
     Raises:
     - `HTTPException`: If an error occurs.
     """
-    try:
-        for topic in topics:
-            validate_kafka_topic_name(topic)
-    except ValueError as err:
+    invalid_topics = [topic for topic in topics if not is_topic_valid(topic)]
+    if invalid_topics:
+        msg = f"Invalid topic(s): {', '.join(invalid_topics)}"
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(err)
-        ) from err
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=msg
+        )
 
     try:
         await events_handler.clear_topics(
