@@ -28,27 +28,28 @@ from tests.fixtures.utils import VALID_BEARER_TOKEN
 
 pytestmark = pytest.mark.asyncio()
 
+TEST_TOPIC1 = "topic1"
+TEST_TOPIC2 = "topic2"
+TEST_TYPE_AND_KEY = {"type_": "test_event", "key": "key1"}
+
 TEST_EVENT1 = {
-    "type_": "test_event",
     "payload": {"test": "event1"},
-    "key": "key1",
-    "topic": "topic1",
+    "topic": TEST_TOPIC1,
+    **TEST_TYPE_AND_KEY,
 }
 TEST_EVENT2 = {
-    "type_": "test_event",
     "payload": {"test": "event2"},
-    "key": "key1",
-    "topic": "topic1",
+    "topic": TEST_TOPIC1,
+    **TEST_TYPE_AND_KEY,
 }
 TEST_EVENT3 = {
-    "type_": "test_event",
     "payload": {"test": "event3"},
-    "key": "key1",
-    "topic": "topic2",
+    "topic": TEST_TOPIC2,
+    **TEST_TYPE_AND_KEY,
 }
 # 2 events in topic1, 1 event in topic2
 TEST_EVENTS = [TEST_EVENT1, TEST_EVENT2, TEST_EVENT3]
-TEST_TOPICS = ["topic1", "topic2"]
+TEST_TOPICS = [TEST_TOPIC1, TEST_TOPIC2]
 
 
 @pytest.mark.parametrize(
@@ -59,13 +60,13 @@ TEST_TOPICS = ["topic1", "topic2"]
     [
         [],
         TEST_TOPICS,
-        ["topic1"],
-        ["topic2"],
+        [TEST_TOPIC1],
+        [TEST_TOPIC2],
         ["does-not-exist"],
     ],
     ids=[
-        "ClearNoTopics",
-        "ClearAllTopics",
+        "ClearAllTopicsByDefault",
+        "ClearAllTopicsExplicitly",
         "ClearTopic1",
         "ClearTopic2",
         "ClearNonExistentTopic",
