@@ -31,9 +31,7 @@ class EventsHandler(EventsHandlerPort):
         """Construct and return an instance of AIOKafkaAdminClient."""
         return AIOKafkaAdminClient(bootstrap_servers=self._config.kafka_servers)
 
-    async def clear_topics(
-        self, *, topics: str | list[str], exclude_internal: bool = True
-    ):
+    async def clear_topics(self, *, topics: list[str], exclude_internal: bool = True):
         """Clear messages from given topic(s).
 
         If no topics are specified, all topics will be cleared, except internal topics
@@ -44,8 +42,6 @@ class EventsHandler(EventsHandlerPort):
         try:
             if not topics:
                 topics = await admin_client.list_topics()
-            elif isinstance(topics, str):
-                topics = [topics]
             if exclude_internal:
                 topics = [topic for topic in topics if not topic.startswith("__")]
             topics_info = await admin_client.describe_topics(topics)

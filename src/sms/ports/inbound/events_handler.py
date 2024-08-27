@@ -22,9 +22,7 @@ class EventsHandlerPort(ABC):
     """A class to manage the state of kafka events."""
 
     @abstractmethod
-    async def clear_topics(
-        self, *, topics: str | list[str], exclude_internal: bool = True
-    ):
+    async def clear_topics(self, *, topics: list[str], exclude_internal: bool = True):
         """Clear messages from given topic(s).
 
         If no topics are specified, all topics will be cleared, except internal topics
