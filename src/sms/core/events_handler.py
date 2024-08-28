@@ -14,6 +14,9 @@
 # limitations under the License.
 """Contains implementation of the EventsHandler class."""
 
+from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
+
 from aiokafka import TopicPartition
 from aiokafka.admin import AIOKafkaAdminClient, RecordsToDelete
 
@@ -27,9 +30,15 @@ class EventsHandler(EventsHandlerPort):
     def __init__(self, *, config: Config):
         self._config = config
 
-    def get_admin_client(self) -> AIOKafkaAdminClient:
-        """Construct and return an instance of AIOKafkaAdminClient."""
-        return AIOKafkaAdminClient(bootstrap_servers=self._config.kafka_servers)
+    @asynccontextmanager
+    async def get_admin_client(self) -> AsyncGenerator[AIOKafkaAdminClient, None]:
+        """Construct and return an instance of AIOKafkaAdminClient that is closed after use."""
+        admin_client = AIOKafkaAdminClient(bootstrap_servers=self._config.kafka_servers)
+        await admin_client.start()
+        try:
+            yield admin_client
+        finally:
+            await admin_client.close()
 
     async def clear_topics(self, *, topics: list[str], exclude_internal: bool = True):
         """Clear messages from given topic(s).
@@ -37,9 +46,7 @@ class EventsHandler(EventsHandlerPort):
         If no topics are specified, all topics will be cleared, except internal topics
         unless otherwise specified.
         """
-        admin_client = self.get_admin_client()
-        await admin_client.start()
-        try:
+        async with self.get_admin_client() as admin_client:
             if not topics:
                 topics = await admin_client.list_topics()
             if exclude_internal:
@@ -53,5 +60,3 @@ class EventsHandler(EventsHandlerPort):
                 for partition_info in topic_info["partitions"]
             }
             await admin_client.delete_records(records_to_delete, timeout_ms=10000)
-        finally:
-            await admin_client.close()

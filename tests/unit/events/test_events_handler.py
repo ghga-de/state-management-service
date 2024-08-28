@@ -20,6 +20,7 @@ from unittest.mock import AsyncMock
 import pytest
 from aiokafka import TopicPartition
 from aiokafka.admin import AIOKafkaAdminClient, RecordsToDelete
+from ghga_service_commons.utils.context import asyncnullcontext
 from tests.fixtures.config import DEFAULT_TEST_CONFIG
 
 from sms.core.events_handler import EventsHandler
@@ -72,7 +73,7 @@ async def test_topics_parameter_behavior(topics: list[str], exclude_internal: bo
 
     # Create an instance of the EventsHandler and patch with the mock
     handler = EventsHandler(config=DEFAULT_TEST_CONFIG)
-    handler.get_admin_client = lambda: mock  # type: ignore [method-assign]
+    handler.get_admin_client = lambda: asyncnullcontext(mock)  # type: ignore [method-assign]
 
     # Call the clear_topics method
     await handler.clear_topics(topics=topics, exclude_internal=exclude_internal)
