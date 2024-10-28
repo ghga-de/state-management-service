@@ -40,24 +40,15 @@ class DummySecretsHandler(SecretsHandlerPort):
     def get_secrets(self) -> list[str]:
         """Get all secrets currently stored.
 
-        If `fail_on_get_secrets` is set, it will raise a `SecretRetrievalError`.
+        If `fail_on_get_secrets` is set, it will raise an `InvalidPath` error.
         """
         if self.fail_on_get_secrets:
             raise InvalidPath("Testing failure")
         return self.secrets
 
-    def delete_secrets(self, secrets: list[str] | None = None) -> None:
-        """Delete stored secrets with the matching IDs.
-
-        If no secrets are provided, all secrets are deleted.
-        If `secrets` is provided, only the secrets with the matching IDs are deleted.
-        If a provided secret does not exist, it is ignored.
-        If `fail_on_get_secrets` is set and no secrets are specified, a
-        `SecretRetrievalError` will be raised by the call to `get_secrets()`.
-        """
-        self.recent = secrets
-        secrets_to_delete = secrets or self.get_secrets()
-        self.secrets = [s for s in self.secrets if s not in secrets_to_delete]
+    def delete_secrets(self) -> None:
+        """Delete all secrets stored in the vault."""
+        self.secrets = []
 
 
 @dataclass

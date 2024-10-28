@@ -17,7 +17,7 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, HTTPException, status
 
 from sms.adapters.inbound.fastapi_ import dummies
 from sms.adapters.inbound.fastapi_.http_authorization import (
@@ -49,24 +49,15 @@ async def get_secrets(
 @secrets_router.delete(
     "/",
     operation_id="delete_secrets",
-    summary="Delete one or more secrets from the vault",
-    description=(
-        "If secrets_to_delete is omitted, all secrets are deleted. If"
-        + " `secrets_to_delete` is provided, only the secrets with the matching IDs are"
-        + " deleted. If a provided secret does not exist, it is ignored."
-    ),
+    summary="Delete all secrets from the vault",
     status_code=status.HTTP_204_NO_CONTENT,
 )
 async def delete_secrets(
     secrets_handler: dummies.SecretsHandlerPortDummy,
     _token: Annotated[TokenAuthContext, require_token],
-    secrets_to_delete: list[str] | None = Query(
-        default=None,
-        description="List of secrets to delete.",
-    ),
 ):
     """Delete one or more secrets from the vault"""
     try:
-        secrets_handler.delete_secrets(secrets=secrets_to_delete)
+        secrets_handler.delete_secrets()
     except Exception as exc:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR) from exc

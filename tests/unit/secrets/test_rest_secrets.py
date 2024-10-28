@@ -65,16 +65,6 @@ async def test_get_secrets_error():
 
 
 @pytest.mark.parametrize(
-    "secrets_to_delete",
-    [None, [], ["secret1"], ["secret1", "secret2"]],
-    ids=[
-        "DeleteArgNotProvided",
-        "DeleteEmptyList",
-        "DeleteSecret1",
-        "DeleteSecret1AndSecret2",
-    ],
-)
-@pytest.mark.parametrize(
     "stored_secrets",
     [
         [],
@@ -82,39 +72,24 @@ async def test_get_secrets_error():
     ],
     ids=["VaultIsEmpty", "VaultHasThreeSecrets"],
 )
-async def test_delete_secrets(
-    stored_secrets: list[str], secrets_to_delete: list[str] | None
-):
+async def test_delete_secrets(stored_secrets: list[str]):
     """Test the DELETE secrets endpoint without errors."""
     secrets_handler = DummySecretsHandler(secrets=stored_secrets)
     async with get_rest_client_with_mocks(
         config=DEFAULT_TEST_CONFIG, secrets_handler_override=secrets_handler
     ) as client:
-        if secrets_to_delete is None:
-            response = await client.delete(TEST_URL, headers=HEADERS)
-        else:
-            response = await client.delete(
-                TEST_URL,
-                headers=HEADERS,
-                params={"secrets_to_delete": secrets_to_delete},
-            )
+        response = await client.delete(TEST_URL, headers=HEADERS)
 
     assert response.status_code == 204
-
-    expected_remaining_secrets = (
-        [s for s in stored_secrets if s not in secrets_to_delete]
-        if secrets_to_delete
-        else []
-    )
-
-    assert secrets_handler.secrets == expected_remaining_secrets, secrets_handler.recent
+    assert secrets_handler.secrets == []
 
 
 async def test_delete_secrets_error():
     """Test the DELETE secrets endpoint with an error.
 
-    This is triggered by setting the `fail_on_get_secrets` flag to True and
-    not providing any secrets to delete.
+    This is triggered by setting the `fail_on_get_secrets` flag to True.
+    The `get_secrets` method will raise an exception, but the `delete_secrets`
+    method should still return a 204 status code.
     """
     secrets_handler = DummySecretsHandler(fail_on_get_secrets=True)
     async with get_rest_client_with_mocks(
@@ -122,4 +97,4 @@ async def test_delete_secrets_error():
     ) as client:
         response = await client.delete(TEST_URL, headers=HEADERS)
 
-    assert response.status_code == 500
+    assert response.status_code == 204

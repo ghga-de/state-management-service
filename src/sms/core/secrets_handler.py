@@ -68,20 +68,15 @@ class SecretsHandler(SecretsHandlerPort):
             log.warning(msg)
             return []
 
-    def delete_secrets(self, secrets: list[str] | None = None):
-        """Delete the secrets from the vault.
-
-        If no secrets are provided, all secrets in the vault are deleted.
-        """
-        secrets = secrets or self.get_secrets()
+    def delete_secrets(self):
+        """Delete all secrets from the vault."""
+        secrets = self.get_secrets()
 
         if not secrets:
             log.info("No secrets to delete")
             return
-        log.info(f"Deleting secrets: {secrets}")
 
         for secret in secrets:
             self.client.secrets.kv.v2.delete_metadata_and_all_versions(
                 path=f"{self._config.vault_path}/{secret}"
             )
-            log.debug(f"Deleted secret with id '{secret}'")

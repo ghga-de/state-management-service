@@ -63,36 +63,19 @@ def test_get_secrets_error(monkeypatch: pytest.MonkeyPatch, caplog):
 
 
 def test_delete_secrets_error(monkeypatch: pytest.MonkeyPatch):
-    """Test delete_secrets method on empty vault and without specifying secrets."""
+    """Test delete_secrets method on empty vault."""
     # patch the hvac client with a mock
     mock_client = Mock()
     mock_client.secrets.kv.v2.list_secrets.side_effect = InvalidPath("Invalid path")
     monkeypatch.setattr(SecretsHandler, "client", mock_client)
     secrets_handler = SecretsHandler(config=DEFAULT_TEST_CONFIG)
 
-    # Call delete_secrets() without specifying secrets in order to trigger get_secrets
+    # Call delete_secrets() in order to trigger get_secrets
     secrets_handler.delete_secrets()
     mock_client.secrets.kv.v2.list_secrets.assert_called_once()
     mock_client.secrets.kv.v2.delete_metadata_and_all_versions.assert_not_called()
 
 
-@pytest.mark.parametrize(
-    "secrets_to_delete",
-    [
-        None,
-        [],
-        ["key1"],
-        ["key2"],
-        ["key1", "key2"],
-    ],
-    ids=[
-        "None",
-        "Empty",
-        "DeleteKey1",
-        "DeleteKey2",
-        "DeleteBoth",
-    ],
-)
 @pytest.mark.parametrize(
     "stored_secrets",
     [[], ["key1"], ["key1", "key2"]],
@@ -100,13 +83,9 @@ def test_delete_secrets_error(monkeypatch: pytest.MonkeyPatch):
 )
 def test_delete_successful(
     monkeypatch: pytest.MonkeyPatch,
-    secrets_to_delete: list[str] | None,
     stored_secrets: list[str],
 ):
-    """Test delete_secrets method.
-
-    Use a variety of combinations of stored secrets and secrets to delete.
-    """
+    """Test delete_secrets method."""
     # create a mock for the hvac client
     list_stored_secrets = {"data": {"keys": stored_secrets}}
     mock_client = Mock()
@@ -122,28 +101,15 @@ def test_delete_successful(
     secrets_handler = SecretsHandler(config=DEFAULT_TEST_CONFIG)
 
     # call delete_secrets()
-    secrets_handler.delete_secrets(secrets=secrets_to_delete)
+    secrets_handler.delete_secrets()
+    mock_client.secrets.kv.v2.list_secrets.assert_called_once()
 
-    # list_secrets is ONLY called if secrets_to_delete is None or empty list
-    if not secrets_to_delete:
-        mock_client.secrets.kv.v2.list_secrets.assert_called_once()
-    else:
-        mock_client.secrets.kv.v2.list_secrets.assert_not_called()
-
-    # delete_metadata_and_all_versions is called for each secret in secrets_to_delete
-    #   if that's not supplied, then it is called for each value in list_secrets
-    calls = (
-        [
-            call(path=f"{DEFAULT_TEST_CONFIG.vault_path}/{secret}")
-            for secret in stored_secrets
-        ]
-        if not secrets_to_delete
-        else [
-            call(path=f"{DEFAULT_TEST_CONFIG.vault_path}/{secret}")
-            for secret in secrets_to_delete
-        ]
-    )
+    # delete_metadata_and_all_versions is called for each secret
+    internal_deletion_calls = [
+        call(path=f"{DEFAULT_TEST_CONFIG.vault_path}/{secret}")
+        for secret in stored_secrets
+    ]
     mock_client.secrets.kv.v2.delete_metadata_and_all_versions.assert_has_calls(
-        calls,
+        internal_deletion_calls,
         any_order=True,
     )

@@ -385,35 +385,14 @@ paths:
       - sms-s3
   /secrets/:
     delete:
-      description: If secrets_to_delete is omitted, all secrets are deleted. If `secrets_to_delete`
-        is provided, only the secrets with the matching IDs are deleted. If a provided
-        secret does not exist, it is ignored.
+      description: Delete one or more secrets from the vault
       operationId: delete_secrets
-      parameters:
-      - description: List of secrets to delete.
-        in: query
-        name: secrets_to_delete
-        required: false
-        schema:
-          anyOf:
-          - items:
-              type: string
-            type: array
-          - type: 'null'
-          description: List of secrets to delete.
-          title: Secrets To Delete
       responses:
         '204':
           description: Successful Response
-        '422':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HTTPValidationError'
-          description: Validation Error
       security:
       - HTTPBearer: []
-      summary: Delete one or more secrets from the vault
+      summary: Delete all secrets from the vault
       tags:
       - StateManagementService
       - sms-vault

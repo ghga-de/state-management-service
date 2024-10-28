@@ -56,11 +56,6 @@ async def test_happy_get(vault_fixture: VaultFixture, stored_secrets: list[str])
 
 
 @pytest.mark.parametrize(
-    "secrets_to_delete",
-    [[], ["key1"], ["key1", "key2"], ["DoesNotExist"]],
-    ids=["DeleteAll", "DeleteKey1", "DeleteKey1Key2", "DeleteDoesNotExist"],
-)
-@pytest.mark.parametrize(
     "stored_secrets",
     [[], ["key1"], ["key1", "key2"]],
     ids=["Empty", "OneKey", "TwoKeys"],
@@ -68,16 +63,10 @@ async def test_happy_get(vault_fixture: VaultFixture, stored_secrets: list[str])
 async def test_happy_delete(
     vault_fixture: VaultFixture,  # noqa: F811
     stored_secrets: list[str],
-    secrets_to_delete: list[str],
 ):
     """Test that the DELETE /secrets endpoint returns the correct response."""
     vault_fixture_config = vault_fixture.config
     config = get_config(sources=[vault_fixture_config])
-
-    # Calculate the secrets expected to remain after deletion
-    expected_secrets_remaining: set[str] = (
-        set(stored_secrets) - set(secrets_to_delete) if secrets_to_delete else set()
-    )
 
     # Store the secrets in the vault
     for secret in stored_secrets:
@@ -88,13 +77,10 @@ async def test_happy_delete(
         AsyncTestClient(app=app) as client,
     ):
         # Make a DELETE request to delete the secrets
-        response = await client.delete(
-            TEST_URL, headers=HEADERS, params={"secrets_to_delete": secrets_to_delete}
-        )
-        print(response.url)
+        response = await client.delete(TEST_URL, headers=HEADERS)
         assert response.status_code == 204
 
         # Make a GET request to check if the secrets were deleted
         response = await client.get(TEST_URL, headers=HEADERS)
         assert response.status_code == 200
-        assert set(response.json()) == expected_secrets_remaining
+        assert response.json() == []

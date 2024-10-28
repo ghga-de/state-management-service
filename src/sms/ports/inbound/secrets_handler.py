@@ -28,8 +28,5 @@ class SecretsHandlerPort(ABC):
         """Return the IDs of all secrets in the vault."""
 
     @abstractmethod
-    def delete_secrets(self, secrets: list[str] | None = None):
-        """Delete the secrets from the vault.
-
-        If no secrets are provided, all secrets in the vault are deleted.
-        """
+    def delete_secrets(self):
+        """Delete all secrets from the vault."""
