@@ -24,7 +24,8 @@ from hexkit.config import config_from_yaml
 from hexkit.log import LoggingConfig
 from hexkit.providers.akafka import KafkaConfig
 from pydantic import Field, SecretStr, field_validator, model_validator
-from tests.fixtures.vault import VaultConfig
+
+from sms.core.secrets_handler import VaultConfig
 
 SERVICE_NAME: str = "sms"
 

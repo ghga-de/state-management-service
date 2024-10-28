@@ -84,7 +84,7 @@ def vault_container_fixture() -> Generator[VaultContainerFixture, None, None]:
         port = vault_container.get_exposed_port(DEFAULT_PORT)
         vault_container.config = VaultConfig(
             vault_url=f"http://{host}:{port}",
-            vault_path="ekss",
+            vault_path="sms",
             vault_token=DEFAULT_TOKEN,
         )
 

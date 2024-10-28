@@ -151,6 +151,11 @@ The service requires the following configuration parameters:
   Examples:
 
   ```json
+  "sms"
+  ```
+
+
+  ```json
   "ekss"
   ```
 

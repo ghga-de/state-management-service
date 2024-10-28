@@ -207,6 +207,7 @@
     "vault_path": {
       "description": "Path for the Vault",
       "examples": [
+        "sms",
         "ekss"
       ],
       "title": "Vault Path",
