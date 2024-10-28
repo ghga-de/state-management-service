@@ -42,7 +42,7 @@ async def get_secrets(
     """Returns a list of secrets in the vault"""
     try:
         return secrets_handler.get_secrets()
-    except secrets_handler.SecretRetrievalError as exc:
+    except Exception as exc:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR) from exc
 
 
@@ -68,5 +68,5 @@ async def delete_secrets(
     """Delete one or more secrets from the vault"""
     try:
         secrets_handler.delete_secrets(secrets=secrets_to_delete)
-    except secrets_handler.SecretRetrievalError as exc:
+    except Exception as exc:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR) from exc

@@ -38,34 +38,25 @@ class SecretsHandler(SecretsHandlerPort):
         return HvacClient(self._config.vault_url, self._config.vault_token)
 
     def get_secrets(self) -> list[str]:
-        """Return the IDs of all secrets in the vault.
-
-        Raises
-        - `SecreteRetrievalError`: If the path is invalid or no secrets exist.
-        """
+        """Return the IDs of all secrets in the vault."""
         try:
             secrets = self.client.secrets.kv.v2.list_secrets(
                 path=self._config.vault_path
             )
             secret_ids = secrets["data"]["keys"]
             return secret_ids
-        except InvalidPath as exc:
+        except InvalidPath:
             msg = (
                 "Invalid path error when fetching secrets. The path might be invalid,"
                 + " or no secrets may exist."
             )
-            retrieval_error = self.SecretRetrievalError(msg)
-            log.error(retrieval_error, exc)
-            raise retrieval_error from exc
+            log.warning(msg)
+            return []
 
     def delete_secrets(self, secrets: list[str] | None = None):
         """Delete the secrets from the vault.
 
         If no secrets are provided, all secrets in the vault are deleted.
-
-        Raises
-        - `SecreteRetrievalError`: If the path is invalid or no secrets exist. This will
-          only occur if the `secrets` parameter is omitted.
         """
         secrets = secrets or self.get_secrets()
 

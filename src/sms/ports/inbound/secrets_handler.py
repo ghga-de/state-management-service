@@ -20,31 +20,16 @@ from abc import ABC, abstractmethod
 log = logging.getLogger(__name__)
 
 
-class VaultException(RuntimeError):
-    """Baseclass for for errors encountered when interacting with HashiCorp Vault"""
-
-
 class SecretsHandlerPort(ABC):
     """A class to interact with a HashiCorp Vault."""
 
-    class SecretRetrievalError(VaultException):
-        """Wrapper for errors encountered on secret retrieval"""
-
     @abstractmethod
     def get_secrets(self) -> list[str]:
-        """Return the IDs of all secrets in the vault.
-
-        Raises
-        - `SecreteRetrievalError`: If the path is invalid or no secrets exist.
-        """
+        """Return the IDs of all secrets in the vault."""
 
     @abstractmethod
     def delete_secrets(self, secrets: list[str] | None = None):
         """Delete the secrets from the vault.
 
         If no secrets are provided, all secrets in the vault are deleted.
-
-        Raises
-        - `SecreteRetrievalError`: If the path is invalid or no secrets exist. This will
-          only occur if the `secrets` parameter is omitted.
         """
