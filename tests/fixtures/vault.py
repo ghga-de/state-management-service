@@ -12,11 +12,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""HashiCorp vault fixture for texting"""
+"""HashiCorp vault fixture for testing"""
 
 import time
 from collections.abc import Generator
-from typing import Any
 
 import hvac
 import pytest
@@ -60,19 +59,6 @@ class VaultFixture:
             path=f"{self.config.vault_path}/{key}",
             secret={key: f"secret_for_{key}"},
         )
-
-    def get_secret(self, key: str) -> Any:
-        """Retrieve a secret from vault"""
-        client = hvac.Client(url=self.config.vault_url)
-        client.auth.approle.login(
-            role_id=self.config.vault_role_id,
-            secret_id=self.config.vault_secret_id,
-        )
-        response = client.secrets.kv.v2.read_secret_version(
-            path=f"{self.config.vault_path}/{key}",
-            raise_on_deleted_version=True,
-        )
-        return response["data"]["data"][key]
 
 
 @pytest.fixture
