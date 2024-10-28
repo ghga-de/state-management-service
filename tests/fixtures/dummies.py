@@ -17,6 +17,7 @@
 from dataclasses import dataclass
 
 from hexkit.custom_types import JsonObject
+from hvac.exceptions import InvalidPath
 
 from sms.models import Criteria, UpsertionDetails
 from sms.ports.inbound.docs_handler import DocsHandlerPort
@@ -42,7 +43,7 @@ class DummySecretsHandler(SecretsHandlerPort):
         If `fail_on_get_secrets` is set, it will raise a `SecretRetrievalError`.
         """
         if self.fail_on_get_secrets:
-            raise self.SecretRetrievalError()
+            raise InvalidPath("Testing failure")
         return self.secrets
 
     def delete_secrets(self, secrets: list[str] | None = None) -> None:
