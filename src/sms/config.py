@@ -32,6 +32,16 @@ SERVICE_NAME: str = "sms"
 class SmsConfig(BaseSettings):
     """Configuration specific to the SMS."""
 
+    vault_url: str = Field(
+        default=..., description="URL for the Vault", examples=["http://vault:8200"]
+    )
+    vault_token: str = Field(
+        default=..., description="Token for the Vault", examples=["dev-token"]
+    )
+    vault_path: str = Field(
+        default=..., description="Path for the Vault", examples=["ekss"]
+    )
+
     token_hashes: list[str] = Field(
         default=...,
         description="List of token hashes corresponding to the tokens that can be used "

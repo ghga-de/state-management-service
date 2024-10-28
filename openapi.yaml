@@ -57,7 +57,7 @@ components:
 info:
   description: A service for basic infrastructure technology state management.
   title: State Management Service
-  version: 1.3.1
+  version: 1.4.0
 openapi: 3.1.0
 paths:
   /documents/permissions:
@@ -383,5 +383,58 @@ paths:
       tags:
       - StateManagementService
       - sms-s3
+  /secrets/:
+    delete:
+      description: If secrets_to_delete is omitted, all secrets are deleted. If `secrets_to_delete`
+        is provided, only the secrets with the matching IDs are deleted. If a provided
+        secret does not exist, it is ignored.
+      operationId: delete_secrets
+      parameters:
+      - description: List of secrets to delete.
+        in: query
+        name: secrets_to_delete
+        required: false
+        schema:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: 'null'
+          description: List of secrets to delete.
+          title: Secrets To Delete
+      responses:
+        '204':
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      security:
+      - HTTPBearer: []
+      summary: Delete one or more secrets from the vault
+      tags:
+      - StateManagementService
+      - sms-vault
+    get:
+      description: Returns a list of secrets in the vault
+      operationId: get_secrets
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                items:
+                  type: string
+                title: Response Get Secrets
+                type: array
+          description: Successful Response
+      security:
+      - HTTPBearer: []
+      summary: Returns a list of secrets in the vault
+      tags:
+      - StateManagementService
+      - sms-vault
 tags:
 - name: StateManagementService
