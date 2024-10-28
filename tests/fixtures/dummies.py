@@ -21,6 +21,42 @@ from hexkit.custom_types import JsonObject
 from sms.models import Criteria, UpsertionDetails
 from sms.ports.inbound.docs_handler import DocsHandlerPort
 from sms.ports.inbound.objects_handler import ObjectsHandlerPort, S3ObjectStoragesPort
+from sms.ports.inbound.secrets_handler import SecretsHandlerPort
+
+
+class DummySecretsHandler(SecretsHandlerPort):
+    """Dummy SecretsHandler implementation for testing.
+
+    It can be set to fail when `get_secrets` is called to mimic an error.
+    """
+
+    def __init__(
+        self, secrets: list[str] | None = None, fail_on_get_secrets: bool = False
+    ):
+        self.secrets = secrets if secrets else []
+        self.fail_on_get_secrets = fail_on_get_secrets
+
+    def get_secrets(self) -> list[str]:
+        """Get all secrets currently stored.
+
+        If `fail_on_get_secrets` is set, it will raise a `SecretRetrievalError`.
+        """
+        if self.fail_on_get_secrets:
+            raise self.SecretRetrievalError()
+        return self.secrets
+
+    def delete_secrets(self, secrets: list[str] | None = None) -> None:
+        """Delete stored secrets with the matching IDs.
+
+        If no secrets are provided, all secrets are deleted.
+        If `secrets` is provided, only the secrets with the matching IDs are deleted.
+        If a provided secret does not exist, it is ignored.
+        If `fail_on_get_secrets` is set and no secrets are specified, a
+        `SecretRetrievalError` will be raised by the call to `get_secrets()`.
+        """
+        self.recent = secrets
+        secrets_to_delete = secrets or self.get_secrets()
+        self.secrets = [s for s in self.secrets if s not in secrets_to_delete]
 
 
 @dataclass
