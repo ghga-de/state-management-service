@@ -24,23 +24,13 @@ from hexkit.config import config_from_yaml
 from hexkit.log import LoggingConfig
 from hexkit.providers.akafka import KafkaConfig
 from pydantic import Field, SecretStr, field_validator, model_validator
-from pydantic_settings import BaseSettings
+from tests.fixtures.vault import VaultConfig
 
 SERVICE_NAME: str = "sms"
 
 
-class SmsConfig(BaseSettings):
+class SmsConfig(VaultConfig):
     """Configuration specific to the SMS."""
-
-    vault_url: str = Field(
-        default=..., description="URL for the Vault", examples=["http://vault:8200"]
-    )
-    vault_token: str = Field(
-        default=..., description="Token for the Vault", examples=["dev-token"]
-    )
-    vault_path: str = Field(
-        default=..., description="Path for the Vault", examples=["ekss"]
-    )
 
     token_hashes: list[str] = Field(
         default=...,

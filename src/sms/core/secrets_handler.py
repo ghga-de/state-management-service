@@ -18,17 +18,32 @@ import logging
 
 from hvac import Client as HvacClient
 from hvac.exceptions import InvalidPath
+from pydantic import Field
+from pydantic_settings import BaseSettings
 
-from sms.config import Config
 from sms.ports.inbound.secrets_handler import SecretsHandlerPort
 
 log = logging.getLogger(__name__)
 
 
+class VaultConfig(BaseSettings):
+    """Configuration for the vault client"""
+
+    vault_url: str = Field(
+        default=..., description="URL for the Vault", examples=["http://vault:8200"]
+    )
+    vault_token: str = Field(
+        default=..., description="Token for the Vault", examples=["dev-token"]
+    )
+    vault_path: str = Field(
+        default=..., description="Path for the Vault", examples=["sms", "ekss"]
+    )
+
+
 class SecretsHandler(SecretsHandlerPort):
     """Adapter wrapping hvac.Client"""
 
-    def __init__(self, config: Config):
+    def __init__(self, config: VaultConfig):
         """Initialized approle based client and login"""
         self._config = config
 

@@ -22,7 +22,11 @@ from ghga_service_commons.api.testing import AsyncTestClient
 from sms.inject import prepare_rest_app
 from tests.fixtures.config import get_config
 from tests.fixtures.utils import VALID_BEARER_TOKEN
-from tests.fixtures.vault import VaultFixture, vault_fixture  # noqa: F401
+from tests.fixtures.vault import (  # noqa: F401
+    VaultFixture,
+    vault_container_fixture,
+    vault_fixture,
+)
 
 TEST_URL = "/secrets/"
 pytestmark = pytest.mark.asyncio()

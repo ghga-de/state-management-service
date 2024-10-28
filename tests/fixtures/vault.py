@@ -16,30 +16,19 @@
 
 import time
 from collections.abc import Generator
+from contextlib import suppress
 
 import hvac
 import pytest
-from pydantic import Field
-from pydantic_settings import BaseSettings
-
-# from testcontainers.vault import DockerContainer
+from hvac.exceptions import InvalidPath
 from testcontainers.core.generic import DockerContainer
 
-VAULT_URL = "http://0.0.0.0:8200"
-VAULT_NAMESPACE = "vault"
-VAULT_TOKEN = "dev-token"
-VAULT_PORT = 8200
+from sms.core.secrets_handler import VaultConfig
 
-
-class VaultConfig(BaseSettings):
-    """Configuration for vault container/fixture"""
-
-    vault_url: str = Field(
-        default="http://0.0.0.0:8200", description="URL of the vault server"
-    )
-    vault_role_id: str = Field(..., description="Role ID for vault authentication")
-    vault_secret_id: str = Field(..., description="Secret ID for vault authentication")
-    vault_path: str = Field(default="ekss", description="Path to store secrets")
+DEFAULT_IMAGE = "hashicorp/vault:1.12"
+DEFAULT_URL = "http://0.0.0.0:8200"
+DEFAULT_PORT = 8200
+DEFAULT_TOKEN = "dev-token"
 
 
 class VaultFixture:
@@ -50,87 +39,65 @@ class VaultFixture:
 
     def store_secret(self, key: str):
         """Store a secret in vault"""
-        client = hvac.Client(url=self.config.vault_url, token=VAULT_TOKEN)
-        client.auth.approle.login(
-            role_id=self.config.vault_role_id,
-            secret_id=self.config.vault_secret_id,
-        )
+        client = hvac.Client(url=self.config.vault_url, token=DEFAULT_TOKEN)
+
         client.secrets.kv.v2.create_or_update_secret(
             path=f"{self.config.vault_path}/{key}",
             secret={key: f"secret_for_{key}"},
         )
 
+    def delete_all_secrets(self):
+        """Remove all secrets from the vault to reset for next test"""
+        client = hvac.Client(url=self.config.vault_url, token=DEFAULT_TOKEN)
 
-@pytest.fixture
-def vault_fixture() -> Generator[VaultFixture, None, None]:
+        with suppress(InvalidPath):
+            secrets = client.secrets.kv.v2.list_secrets(path=self.config.vault_path)
+            for key in secrets["data"]["keys"]:
+                client.secrets.kv.v2.delete_metadata_and_all_versions(
+                    path=f"{self.config.vault_path}/{key}"
+                )
+
+
+class VaultContainer(DockerContainer):
+    """A hashi corp vault container for testing."""
+
+    def __init__(self, image: str = DEFAULT_IMAGE, port: int = DEFAULT_PORT, **kwargs):
+        """Initialize a vault container with default settings."""
+        super().__init__(image, **kwargs)
+
+        self.with_exposed_ports(port)
+        self.with_env("VAULT_ADDR", DEFAULT_URL)
+        self.with_env("VAULT_DEV_ROOT_TOKEN_ID", DEFAULT_TOKEN)
+
+
+class VaultContainerFixture(VaultContainer):
+    """Fixture for VaultContainer"""
+
+    config: VaultConfig
+
+
+@pytest.fixture(scope="session", name="vault_container")
+def vault_container_fixture() -> Generator[VaultContainerFixture, None, None]:
     """Generate preconfigured test container"""
-    vault_container = (
-        DockerContainer(image="hashicorp/vault:1.12")
-        .with_exposed_ports(VAULT_PORT)
-        .with_env("VAULT_ADDR", VAULT_URL)
-        .with_env("VAULT_DEV_ROOT_TOKEN_ID", VAULT_TOKEN)
-    )
-    with vault_container:
+    with VaultContainerFixture() as vault_container:
         host = vault_container.get_container_host_ip()
-        port = vault_container.get_exposed_port(VAULT_PORT)
-        role_id, secret_id = configure_vault(host=host, port=int(port))
-        config = VaultConfig(
+        port = vault_container.get_exposed_port(DEFAULT_PORT)
+        vault_container.config = VaultConfig(
             vault_url=f"http://{host}:{port}",
-            vault_role_id=role_id,
-            vault_secret_id=secret_id,
             vault_path="ekss",
+            vault_token=DEFAULT_TOKEN,
         )
+
         # client needs some time after creation
         time.sleep(2)
-        yield VaultFixture(config=config)
+        yield vault_container
 
 
-def configure_vault(*, host: str, port: int):
-    """Configure vault using direct interaction with hvac.Client"""
-    client = hvac.Client(url=f"http://{host}:{port}", token=VAULT_TOKEN)
-    # client needs some time after creation
-    time.sleep(2)
-
-    # enable authentication with role_id/secret_id
-    client.sys.enable_auth_method(
-        method_type="approle",
-    )
-
-    # create access policy to bind to role
-    ekss_policy = """
-    path "secret/data/ekss/*" {
-        capabilities = ["read", "create"]
-    }
-    path "secret/metadata/ekss/*" {
-        capabilities = ["delete"]
-    }
-    """
-
-    # inject policy
-    client.sys.create_or_update_policy(
-        name="ekss",
-        policy=ekss_policy,
-    )
-
-    role_name = "test_role"
-    # create role and bind policy
-    response = client.auth.approle.create_or_update_approle(
-        role_name=role_name,
-        token_policies=["ekss"],
-        token_type="service",
-    )
-
-    # retrieve role_id
-    response = client.auth.approle.read_role_id(role_name=role_name)
-    role_id = response["data"]["role_id"]
-
-    # retrieve secret_id
-    response = client.auth.approle.generate_secret_id(
-        role_name=role_name,
-    )
-    secret_id = response["data"]["secret_id"]
-
-    # log out root token client
-    client.logout()
-
-    return role_id, secret_id
+@pytest.fixture(scope="function")
+def vault_fixture(
+    vault_container: VaultContainerFixture,
+) -> Generator[VaultFixture, None, None]:
+    """Fixture function to produce a VaultFixture"""
+    vault = VaultFixture(config=vault_container.config)
+    vault.delete_all_secrets()
+    yield vault
