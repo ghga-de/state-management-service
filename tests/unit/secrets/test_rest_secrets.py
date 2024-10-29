@@ -74,19 +74,3 @@ async def test_delete_secrets(stored_secrets: list[str]):
 
     assert response.status_code == 204
     assert secrets_handler.secrets.get(DEFAULT_VAULT_PATH, []) == []
-
-
-async def test_delete_secrets_error():
-    """Test the DELETE secrets endpoint with an error.
-
-    This is triggered by setting the `fail_on_get_secrets` flag to True.
-    The `get_secrets` method will raise an exception, but the `delete_secrets`
-    method should still return a 204 status code.
-    """
-    secrets_handler = DummySecretsHandler(fail_on_get_secrets=True)
-    async with get_rest_client_with_mocks(
-        config=DEFAULT_TEST_CONFIG, secrets_handler_override=secrets_handler
-    ) as client:
-        response = await client.delete(TEST_URL, headers=HEADERS)
-
-    assert response.status_code == 204

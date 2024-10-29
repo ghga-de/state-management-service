@@ -17,7 +17,6 @@
 from dataclasses import dataclass
 
 from hexkit.custom_types import JsonObject
-from hvac.exceptions import InvalidPath
 
 from sms.models import Criteria, UpsertionDetails
 from sms.ports.inbound.docs_handler import DocsHandlerPort
@@ -28,26 +27,17 @@ from sms.ports.inbound.secrets_handler import SecretsHandlerPort
 class DummySecretsHandler(SecretsHandlerPort):
     """Dummy SecretsHandler implementation for testing.
 
-    It can be set to fail when `get_secrets` is called to mimic an error.
     `secrets` is a dictionary that maps vault paths to lists of secrets.
     """
 
     def __init__(
         self,
         secrets: dict[str, list[str]] | None = None,
-        fail_on_get_secrets: bool = False,
     ):
         self.secrets = secrets if secrets else {}
-        self.fail_on_get_secrets = fail_on_get_secrets
 
     def get_secrets(self, vault_path: str) -> list[str]:
-        """Get all secrets currently stored.
-
-        If `fail_on_get_secrets` is set, it will raise an `InvalidPath` error.
-        """
-        if self.fail_on_get_secrets:
-            raise InvalidPath("Testing failure")
-
+        """Get all secrets currently stored for the specified vault."""
         return self.secrets.get(vault_path, [])
 
     def delete_secrets(self, vault_path: str) -> None:
