@@ -145,21 +145,6 @@ The service requires the following configuration parameters:
   ```
 
 
-- **`vault_path`** *(string, required)*: Path for the Vault.
-
-
-  Examples:
-
-  ```json
-  "sms"
-  ```
-
-
-  ```json
-  "ekss"
-  ```
-
-
 - **`token_hashes`** *(array, required)*: List of token hashes corresponding to the tokens that can be used to authenticate calls to this service. Hashes are made with SHA-256.
 
   - **Items** *(string)*

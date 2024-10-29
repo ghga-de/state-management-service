@@ -204,15 +204,6 @@
       "title": "Vault Token",
       "type": "string"
     },
-    "vault_path": {
-      "description": "Path for the Vault",
-      "examples": [
-        "sms",
-        "ekss"
-      ],
-      "title": "Vault Path",
-      "type": "string"
-    },
     "token_hashes": {
       "description": "List of token hashes corresponding to the tokens that can be used to authenticate calls to this service. Hashes are made with SHA-256.",
       "examples": [
@@ -438,7 +429,6 @@
     "object_storages",
     "vault_url",
     "vault_token",
-    "vault_path",
     "token_hashes",
     "db_prefix",
     "db_connection_str"

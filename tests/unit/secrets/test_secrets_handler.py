@@ -22,6 +22,7 @@ from hvac.exceptions import InvalidPath
 
 from sms.core.secrets_handler import SecretsHandler
 from tests.fixtures.config import DEFAULT_TEST_CONFIG
+from tests.fixtures.vault import DEFAULT_VAULT_PATH
 
 
 @pytest.mark.parametrize(
@@ -37,7 +38,7 @@ def test_get_secrets(monkeypatch: pytest.MonkeyPatch, secrets: list[str]):
     monkeypatch.setattr(SecretsHandler, "client", mock_client)
     secrets_handler = SecretsHandler(config=DEFAULT_TEST_CONFIG)
 
-    assert secrets_handler.get_secrets() == secrets
+    assert secrets_handler.get_secrets(DEFAULT_VAULT_PATH) == secrets
     mock_client.secrets.kv.v2.list_secrets.assert_called_once()
 
 
@@ -51,11 +52,11 @@ def test_get_secrets_error(monkeypatch: pytest.MonkeyPatch, caplog):
 
     # Make sure the error is logged as a warning but an empty list is still returned
     caplog.clear()
-    secrets = secrets_handler.get_secrets()
+    secrets = secrets_handler.get_secrets(DEFAULT_VAULT_PATH)
     assert len(caplog.messages) == 1
     assert caplog.messages[0] == (
-        "Invalid path error when fetching secrets. The path might be invalid,"
-        + " or no secrets may exist."
+        f"Invalid path error when fetching secrets. The path, '{DEFAULT_VAULT_PATH}',"
+        + " might be invalid, or no secrets may exist."
     )
     assert caplog.records[0].levelname == "WARNING"
     assert secrets == []
@@ -71,7 +72,7 @@ def test_delete_secrets_error(monkeypatch: pytest.MonkeyPatch):
     secrets_handler = SecretsHandler(config=DEFAULT_TEST_CONFIG)
 
     # Call delete_secrets() in order to trigger get_secrets
-    secrets_handler.delete_secrets()
+    secrets_handler.delete_secrets(DEFAULT_VAULT_PATH)
     mock_client.secrets.kv.v2.list_secrets.assert_called_once()
     mock_client.secrets.kv.v2.delete_metadata_and_all_versions.assert_not_called()
 
@@ -101,13 +102,12 @@ def test_delete_successful(
     secrets_handler = SecretsHandler(config=DEFAULT_TEST_CONFIG)
 
     # call delete_secrets()
-    secrets_handler.delete_secrets()
+    secrets_handler.delete_secrets(DEFAULT_VAULT_PATH)
     mock_client.secrets.kv.v2.list_secrets.assert_called_once()
 
     # delete_metadata_and_all_versions is called for each secret
     internal_deletion_calls = [
-        call(path=f"{DEFAULT_TEST_CONFIG.vault_path}/{secret}")
-        for secret in stored_secrets
+        call(path=f"{DEFAULT_VAULT_PATH}/{secret}") for secret in stored_secrets
     ]
     mock_client.secrets.kv.v2.delete_metadata_and_all_versions.assert_has_calls(
         internal_deletion_calls,

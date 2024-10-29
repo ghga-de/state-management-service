@@ -18,6 +18,7 @@
 from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, status
+from pydantic import Field
 
 from sms.adapters.inbound.fastapi_ import dummies
 from sms.adapters.inbound.fastapi_.http_authorization import (
@@ -27,9 +28,13 @@ from sms.adapters.inbound.fastapi_.http_authorization import (
 
 secrets_router = APIRouter()
 
+vault_path_field = Field(
+    default=..., description="The path to the vault", examples=["ekss", "sms"]
+)
+
 
 @secrets_router.get(
-    "/",
+    "/{vault_path}",
     operation_id="get_secrets",
     summary="Returns a list of secrets in the vault",
     status_code=status.HTTP_200_OK,
@@ -38,26 +43,28 @@ secrets_router = APIRouter()
 async def get_secrets(
     secrets_handler: dummies.SecretsHandlerPortDummy,
     _token: Annotated[TokenAuthContext, require_token],
+    vault_path: Annotated[str, vault_path_field],
 ):
-    """Returns a list of secrets in the vault"""
+    """Returns a list of secrets in the specified vault"""
     try:
-        return secrets_handler.get_secrets()
+        return secrets_handler.get_secrets(vault_path)
     except Exception as exc:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR) from exc
 
 
 @secrets_router.delete(
-    "/",
+    "/{vault_path}",
     operation_id="delete_secrets",
-    summary="Delete all secrets from the vault",
+    summary="""Delete all secrets from the specified vault.""",
     status_code=status.HTTP_204_NO_CONTENT,
 )
 async def delete_secrets(
     secrets_handler: dummies.SecretsHandlerPortDummy,
     _token: Annotated[TokenAuthContext, require_token],
+    vault_path: Annotated[str, vault_path_field],
 ):
-    """Delete one or more secrets from the vault"""
+    """Delete all secrets from the specified vault."""
     try:
-        secrets_handler.delete_secrets()
+        secrets_handler.delete_secrets(vault_path)
     except Exception as exc:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR) from exc

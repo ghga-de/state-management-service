@@ -29,33 +29,45 @@ DEFAULT_IMAGE = "hashicorp/vault:1.12"
 DEFAULT_URL = "http://0.0.0.0:8200"
 DEFAULT_PORT = 8200
 DEFAULT_TOKEN = "dev-token"
+DEFAULT_VAULT_PATH = "sms"
 
 
 class VaultFixture:
-    """Contains initialized vault client"""
+    """Contains initialized vault client.
+
+    When a vault secret is stored, the vault path is stored in vaults_used.
+    """
 
     def __init__(self, config: VaultConfig):
         self.config = config
+        self.vaults_used: set[str] = set()
 
-    def store_secret(self, key: str):
+    def store_secret(self, *, key: str, vault_path: str = DEFAULT_VAULT_PATH):
         """Store a secret in vault"""
         client = hvac.Client(url=self.config.vault_url, token=DEFAULT_TOKEN)
 
         client.secrets.kv.v2.create_or_update_secret(
-            path=f"{self.config.vault_path}/{key}",
+            path=f"{vault_path}/{key}",
             secret={key: f"secret_for_{key}"},
         )
+        self.vaults_used.add(vault_path)
 
-    def delete_all_secrets(self):
+    def delete_all_secrets(self, vault_path: str):
         """Remove all secrets from the vault to reset for next test"""
         client = hvac.Client(url=self.config.vault_url, token=DEFAULT_TOKEN)
 
         with suppress(InvalidPath):
-            secrets = client.secrets.kv.v2.list_secrets(path=self.config.vault_path)
+            secrets = client.secrets.kv.v2.list_secrets(path=vault_path)
             for key in secrets["data"]["keys"]:
                 client.secrets.kv.v2.delete_metadata_and_all_versions(
-                    path=f"{self.config.vault_path}/{key}"
+                    path=f"{vault_path}/{key}"
                 )
+
+    def reset(self):
+        """Reset the vault for next test"""
+        for vault_path in self.vaults_used:
+            self.delete_all_secrets(vault_path)
+        self.vaults_used.clear()
 
 
 class VaultContainer(DockerContainer):
@@ -84,7 +96,6 @@ def vault_container_fixture() -> Generator[VaultContainerFixture, None, None]:
         port = vault_container.get_exposed_port(DEFAULT_PORT)
         vault_container.config = VaultConfig(
             vault_url=f"http://{host}:{port}",
-            vault_path="sms",
             vault_token=DEFAULT_TOKEN,
         )
 
@@ -99,5 +110,5 @@ def vault_fixture(
 ) -> Generator[VaultFixture, None, None]:
     """Fixture function to produce a VaultFixture"""
     vault = VaultFixture(config=vault_container.config)
-    vault.delete_all_secrets()
+    vault.reset()
     yield vault

@@ -383,22 +383,50 @@ paths:
       tags:
       - StateManagementService
       - sms-s3
-  /secrets/:
+  /secrets/{vault_path}:
     delete:
-      description: Delete one or more secrets from the vault
+      description: Delete all secrets from the specified vault.
       operationId: delete_secrets
+      parameters:
+      - in: path
+        name: vault_path
+        required: true
+        schema:
+          description: The path to the vault
+          examples:
+          - ekss
+          - sms
+          title: Vault Path
+          type: string
       responses:
         '204':
           description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
       security:
       - HTTPBearer: []
-      summary: Delete all secrets from the vault
+      summary: Delete all secrets from the specified vault.
       tags:
       - StateManagementService
       - sms-vault
     get:
-      description: Returns a list of secrets in the vault
+      description: Returns a list of secrets in the specified vault
       operationId: get_secrets
+      parameters:
+      - in: path
+        name: vault_path
+        required: true
+        schema:
+          description: The path to the vault
+          examples:
+          - ekss
+          - sms
+          title: Vault Path
+          type: string
       responses:
         '200':
           content:
@@ -409,6 +437,12 @@ paths:
                 title: Response Get Secrets
                 type: array
           description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
       security:
       - HTTPBearer: []
       summary: Returns a list of secrets in the vault

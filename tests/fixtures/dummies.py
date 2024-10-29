@@ -29,26 +29,30 @@ class DummySecretsHandler(SecretsHandlerPort):
     """Dummy SecretsHandler implementation for testing.
 
     It can be set to fail when `get_secrets` is called to mimic an error.
+    `secrets` is a dictionary that maps vault paths to lists of secrets.
     """
 
     def __init__(
-        self, secrets: list[str] | None = None, fail_on_get_secrets: bool = False
+        self,
+        secrets: dict[str, list[str]] | None = None,
+        fail_on_get_secrets: bool = False,
     ):
-        self.secrets = secrets if secrets else []
+        self.secrets = secrets if secrets else {}
         self.fail_on_get_secrets = fail_on_get_secrets
 
-    def get_secrets(self) -> list[str]:
+    def get_secrets(self, vault_path: str) -> list[str]:
         """Get all secrets currently stored.
 
         If `fail_on_get_secrets` is set, it will raise an `InvalidPath` error.
         """
         if self.fail_on_get_secrets:
             raise InvalidPath("Testing failure")
-        return self.secrets
 
-    def delete_secrets(self) -> None:
+        return self.secrets.get(vault_path, [])
+
+    def delete_secrets(self, vault_path: str) -> None:
         """Delete all secrets stored in the vault."""
-        self.secrets = []
+        self.secrets.pop(vault_path, None)
 
 
 @dataclass

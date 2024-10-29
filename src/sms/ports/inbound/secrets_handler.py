@@ -24,9 +24,9 @@ class SecretsHandlerPort(ABC):
     """A class to interact with a HashiCorp Vault."""
 
     @abstractmethod
-    def get_secrets(self) -> list[str]:
-        """Return the IDs of all secrets in the vault."""
+    def get_secrets(self, vault_path: str) -> list[str]:
+        """Returns a list of secrets in the specified vault"""
 
     @abstractmethod
-    def delete_secrets(self):
-        """Delete all secrets from the vault."""
+    def delete_secrets(self, vault_path: str) -> None:
+        """Delete all secrets from the specified vault."""

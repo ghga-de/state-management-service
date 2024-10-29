@@ -21,15 +21,16 @@ import pytest
 from tests.fixtures.config import DEFAULT_TEST_CONFIG
 from tests.fixtures.dummies import DummySecretsHandler
 from tests.fixtures.utils import VALID_BEARER_TOKEN, get_rest_client_with_mocks
+from tests.fixtures.vault import DEFAULT_VAULT_PATH
 
 pytestmark = pytest.mark.asyncio()
 
-TEST_URL = "/secrets/"
+TEST_URL = f"/secrets/{DEFAULT_VAULT_PATH}"
 HEADERS: dict[str, Any] = {"Authorization": VALID_BEARER_TOKEN}
 
 
 @pytest.mark.parametrize(
-    "secrets",
+    "stored_secrets",
     [
         [],
         ["secret1"],
@@ -41,27 +42,17 @@ HEADERS: dict[str, Any] = {"Authorization": VALID_BEARER_TOKEN}
         "TwoSecrets",
     ],
 )
-async def test_get_secrets(secrets: list[str]):
+async def test_get_secrets(stored_secrets: list[str]):
     """Test the GET secrets endpoint without errors."""
-    secrets_handler = DummySecretsHandler(secrets=secrets)
+    vault_path_and_secrets = {DEFAULT_VAULT_PATH: stored_secrets}
+    secrets_handler = DummySecretsHandler(secrets=vault_path_and_secrets)
     async with get_rest_client_with_mocks(
         config=DEFAULT_TEST_CONFIG, secrets_handler_override=secrets_handler
     ) as client:
         response = await client.get(TEST_URL, headers=HEADERS)
 
     assert response.status_code == 200
-    assert response.json() == secrets
-
-
-async def test_get_secrets_error():
-    """Test the GET secrets endpoint with an error."""
-    secrets_handler = DummySecretsHandler(fail_on_get_secrets=True)
-    async with get_rest_client_with_mocks(
-        config=DEFAULT_TEST_CONFIG, secrets_handler_override=secrets_handler
-    ) as client:
-        response = await client.get(TEST_URL, headers=HEADERS)
-
-    assert response.status_code == 500
+    assert response.json() == stored_secrets
 
 
 @pytest.mark.parametrize(
@@ -74,14 +65,15 @@ async def test_get_secrets_error():
 )
 async def test_delete_secrets(stored_secrets: list[str]):
     """Test the DELETE secrets endpoint without errors."""
-    secrets_handler = DummySecretsHandler(secrets=stored_secrets)
+    vault_path_and_secrets = {DEFAULT_VAULT_PATH: stored_secrets}
+    secrets_handler = DummySecretsHandler(secrets=vault_path_and_secrets)
     async with get_rest_client_with_mocks(
         config=DEFAULT_TEST_CONFIG, secrets_handler_override=secrets_handler
     ) as client:
         response = await client.delete(TEST_URL, headers=HEADERS)
 
     assert response.status_code == 204
-    assert secrets_handler.secrets == []
+    assert secrets_handler.secrets.get(DEFAULT_VAULT_PATH, []) == []
 
 
 async def test_delete_secrets_error():

@@ -35,9 +35,6 @@ class VaultConfig(BaseSettings):
     vault_token: str = Field(
         default=..., description="Token for the Vault", examples=["dev-token"]
     )
-    vault_path: str = Field(
-        default=..., description="Path for the Vault", examples=["sms", "ekss"]
-    )
 
 
 class SecretsHandler(SecretsHandlerPort):
@@ -52,31 +49,29 @@ class SecretsHandler(SecretsHandlerPort):
         """Return an instance of a vault client"""
         return HvacClient(self._config.vault_url, self._config.vault_token)
 
-    def get_secrets(self) -> list[str]:
-        """Return the IDs of all secrets in the vault."""
+    def get_secrets(self, vault_path: str) -> list[str]:
+        """Return the IDs of all secrets in the specified vault."""
         try:
-            secrets = self.client.secrets.kv.v2.list_secrets(
-                path=self._config.vault_path
-            )
+            secrets = self.client.secrets.kv.v2.list_secrets(path=vault_path)
             secret_ids = secrets["data"]["keys"]
             return secret_ids
         except InvalidPath:
             msg = (
-                "Invalid path error when fetching secrets. The path might be invalid,"
-                + " or no secrets may exist."
+                "Invalid path error when fetching secrets. The path, '%s', might"
+                + " be invalid, or no secrets may exist."
             )
-            log.warning(msg)
+            log.warning(msg, vault_path)
             return []
 
-    def delete_secrets(self):
-        """Delete all secrets from the vault."""
-        secrets = self.get_secrets()
+    def delete_secrets(self, vault_path: str):
+        """Delete all secrets from the specified vault."""
+        secrets = self.get_secrets(vault_path)
 
         if not secrets:
-            log.info("No secrets to delete")
+            log.info("No secrets to delete from vault path '%s'", vault_path)
             return
 
         for secret in secrets:
             self.client.secrets.kv.v2.delete_metadata_and_all_versions(
-                path=f"{self._config.vault_path}/{secret}"
+                path=f"{vault_path}/{secret}"
             )
