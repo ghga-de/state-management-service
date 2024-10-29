@@ -104,7 +104,7 @@ def vault_container_fixture() -> Generator[VaultContainerFixture, None, None]:
         yield vault_container
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture(scope="function", name="vault")
 def vault_fixture(
     vault_container: VaultContainerFixture,
 ) -> Generator[VaultFixture, None, None]:

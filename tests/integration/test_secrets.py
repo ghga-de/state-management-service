@@ -39,13 +39,13 @@ HEADERS: dict[str, Any] = {"Authorization": VALID_BEARER_TOKEN}
     [[], ["key1"], ["key1", "key2"]],
     ids=["empty", "single", "multiple"],
 )
-async def test_happy_get(vault_fixture: VaultFixture, stored_secrets: list[str]):  # noqa: F811
+async def test_happy_get(vault: VaultFixture, stored_secrets: list[str]):
     """Test that the GET /secrets endpoint returns the correct response."""
-    vault_fixture_config = vault_fixture.config
+    vault_fixture_config = vault.config
     config = get_config(sources=[vault_fixture_config])
 
     for secret in stored_secrets:
-        vault_fixture.store_secret(key=secret)
+        vault.store_secret(key=secret)
 
     async with (
         prepare_rest_app(config=config) as app,
@@ -61,17 +61,14 @@ async def test_happy_get(vault_fixture: VaultFixture, stored_secrets: list[str])
     [[], ["key1"], ["key1", "key2"]],
     ids=["Empty", "OneKey", "TwoKeys"],
 )
-async def test_happy_delete(
-    vault_fixture: VaultFixture,  # noqa: F811
-    stored_secrets: list[str],
-):
+async def test_happy_delete(vault: VaultFixture, stored_secrets: list[str]):
     """Test that the DELETE /secrets endpoint returns the correct response."""
-    vault_fixture_config = vault_fixture.config
+    vault_fixture_config = vault.config
     config = get_config(sources=[vault_fixture_config])
 
     # Store the secrets in the vault
     for secret in stored_secrets:
-        vault_fixture.store_secret(key=secret)
+        vault.store_secret(key=secret)
 
     async with (
         prepare_rest_app(config=config) as app,
@@ -87,9 +84,9 @@ async def test_happy_delete(
         assert response.json() == []
 
 
-async def test_nonexistent_vault_path(vault_fixture: VaultFixture):  # noqa: F811
+async def test_nonexistent_vault_path(vault: VaultFixture):
     """Ensure both endpoint return the right response when `vault_path` doesn't exist."""
-    vault_fixture_config = vault_fixture.config
+    vault_fixture_config = vault.config
     config = get_config(sources=[vault_fixture_config])
 
     async with (
