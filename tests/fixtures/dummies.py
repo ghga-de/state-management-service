@@ -21,28 +21,6 @@ from hexkit.custom_types import JsonObject
 from sms.models import Criteria, UpsertionDetails
 from sms.ports.inbound.docs_handler import DocsHandlerPort
 from sms.ports.inbound.objects_handler import ObjectsHandlerPort, S3ObjectStoragesPort
-from sms.ports.inbound.secrets_handler import SecretsHandlerPort
-
-
-class DummySecretsHandler(SecretsHandlerPort):
-    """Dummy SecretsHandler implementation for testing.
-
-    `secrets` is a dictionary that maps vault paths to lists of secrets.
-    """
-
-    def __init__(
-        self,
-        secrets: dict[str, list[str]] | None = None,
-    ):
-        self.secrets = secrets if secrets else {}
-
-    def get_secrets(self, vault_path: str) -> list[str]:
-        """Get all secrets currently stored for the specified vault."""
-        return self.secrets.get(vault_path, [])
-
-    def delete_secrets(self, vault_path: str) -> None:
-        """Delete all secrets stored in the vault."""
-        self.secrets.pop(vault_path, None)
 
 
 @dataclass
