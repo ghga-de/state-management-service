@@ -107,7 +107,8 @@ def test_delete_successful(
 
     # delete_metadata_and_all_versions is called for each secret
     internal_deletion_calls = [
-        call(path=f"{DEFAULT_VAULT_PATH}/{secret}") for secret in stored_secrets
+        call(path=f"{DEFAULT_VAULT_PATH}/{secret}", mount_point="secret")
+        for secret in stored_secrets
     ]
     mock_client.secrets.kv.v2.delete_metadata_and_all_versions.assert_has_calls(
         internal_deletion_calls,
