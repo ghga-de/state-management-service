@@ -145,6 +145,16 @@ The service requires the following configuration parameters:
   ```
 
 
+- **`vault_secrets_mount_point`** *(string)*: Name used to address the secret engine under a custom mount path. Default: `"secret"`.
+
+
+  Examples:
+
+  ```json
+  "secret"
+  ```
+
+
 - **`token_hashes`** *(array, required)*: List of token hashes corresponding to the tokens that can be used to authenticate calls to this service. Hashes are made with SHA-256.
 
   - **Items** *(string)*
