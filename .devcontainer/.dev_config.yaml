@@ -5,6 +5,11 @@ token_hashes:
 vault_token: "dev-token"
 vault_url: "http://vault:8200"
 vault_secrets_mount_point: secret
+vault_path: sms
+vault_role_id: dummy-role
+vault_secret_id: dummy-secret
+vault_verify: True
+vault_kube_role: dummy-role
 
 db_connection_str: mongodb://mongodb:27017
 db_prefix: "test_"
