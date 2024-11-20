@@ -59,15 +59,15 @@ attrs==24.2.0 \
     #   -c lock/requirements-dev.txt
     #   jsonschema
     #   referencing
-boto3==1.35.64 \
-    --hash=sha256:bc3fc12b41fa2c91e51ab140f74fb1544408a2b1e00f88a4c2369a66d18ddf20 \
-    --hash=sha256:cdacf03fc750caa3aa0dbf6158166def9922c9d67b4160999ff8fc350662facc
+boto3==1.35.65 \
+    --hash=sha256:acbca38322b66516450f959c7874826267d431becdc2b080e331e56c2ebbe507 \
+    --hash=sha256:f6c266b4124b92b1603727bf1ed1917e0b74a899bd0e326f151d80c3eaed27a1
     # via
     #   -c lock/requirements-dev.txt
     #   hexkit
-botocore==1.35.64 \
-    --hash=sha256:2f95c83f31c9e38a66995c88810fc638c829790e125032ba00ab081a2cf48cb9 \
-    --hash=sha256:bbd96bf7f442b1d5e35b36f501076e4a588c83d8d84a1952e9ee1d767e5efb3e
+botocore==1.35.65 \
+    --hash=sha256:46652f732f2b2fb395fffcc33cacb288d05ea283047c9a996fb59d6849464919 \
+    --hash=sha256:8fcaa82ab2338f412e1494449c4c57f9ca785623fb0303f6be5b279c4d27522c
     # via
     #   -c lock/requirements-dev.txt
     #   boto3
@@ -219,9 +219,9 @@ h11==0.14.0 \
     # via
     #   -c lock/requirements-dev.txt
     #   uvicorn
-hexkit==3.7.0 \
-    --hash=sha256:1e0273be7232f9ccb68d24ff88671ab7592fbe25522aa53d10177e245e3834dd \
-    --hash=sha256:dffbb79549df70963b3e08a5f00452b778619220044e851340fa30ba25212c1d
+hexkit==3.8.0 \
+    --hash=sha256:2a6d695350fba8306bf41df669c15586042bfecd55bb8c002c60ec16652b8213 \
+    --hash=sha256:d65d360fa3e4b8d0ff211c32e7ca76f68c0b5fef21b1dbc3fcf8cdb0080bfa5b
     # via
     #   -c lock/requirements-dev.txt
     #   sms (pyproject.toml)
