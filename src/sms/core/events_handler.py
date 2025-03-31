@@ -19,6 +19,7 @@ from contextlib import asynccontextmanager
 
 from aiokafka import TopicPartition
 from aiokafka.admin import AIOKafkaAdminClient, RecordsToDelete
+from aiokafka.admin.config_resource import ConfigResource, ConfigResourceType
 from hexkit.protocols.eventpub import EventPublisherProtocol
 from hexkit.providers.akafka.provider.utils import generate_ssl_context
 
@@ -48,17 +49,63 @@ class EventsHandler(EventsHandlerPort):
         finally:
             await admin_client.close()
 
+    async def _get_cleanup_policy(
+        self, *, admin_client: AIOKafkaAdminClient, topic: str
+    ):
+        """Get the current cleanup policy for a topic"""
+        config_response = await admin_client.describe_configs(
+            [ConfigResource(ConfigResourceType.TOPIC, name=topic)]
+        )
+        config_resources = config_response[0].resources[0]
+        configs = config_resources[-1]
+        policy = "compact"
+        for item in configs:
+            if item[0] == "cleanup.policy":
+                policy = item[1]
+                break
+        return policy
+
+    async def _set_cleanup_policy(
+        self, *, admin_client: AIOKafkaAdminClient, topic: str, policy: str
+    ):
+        """Set the cleanup policy"""
+        await admin_client.alter_configs(
+            config_resources=[
+                ConfigResource(
+                    ConfigResourceType.TOPIC,
+                    name=topic,
+                    configs={
+                        "cleanup.policy": policy,
+                    },
+                )
+            ]
+        )
+
     async def clear_topics(self, *, topics: list[str], exclude_internal: bool = True):
         """Clear messages from given topic(s).
 
         If no topics are specified, all topics will be cleared, except internal topics
         unless otherwise specified.
+
+        To enable topic clearing for compacted topics, the cleanup policy is temporarily
+        set to 'delete' while the action is performed. Afterward, the policy is set to
+        its original value (either 'compact' or 'compact,delete').
         """
         async with self.get_admin_client() as admin_client:
             if not topics:
                 topics = await admin_client.list_topics()
             if exclude_internal:
                 topics = [topic for topic in topics if not topic.startswith("__")]
+            original_policies = {}
+            for topic in topics:
+                policy = await self._get_cleanup_policy(
+                    admin_client=admin_client, topic=topic
+                )
+                original_policies[topic] = policy
+                if policy != "delete":
+                    await self._set_cleanup_policy(
+                        admin_client=admin_client, topic=topic, policy="delete"
+                    )
             topics_info = await admin_client.describe_topics(topics)
             records_to_delete = {
                 TopicPartition(
@@ -68,6 +115,14 @@ class EventsHandler(EventsHandlerPort):
                 for partition_info in topic_info["partitions"]
             }
             await admin_client.delete_records(records_to_delete, timeout_ms=10000)
+            for topic in topics:
+                og_policy = original_policies[topic]
+                if og_policy != "delete":
+                    await self._set_cleanup_policy(
+                        admin_client=admin_client,
+                        topic=topic,
+                        policy=og_policy,
+                    )
 
     async def publish_event(self, *, event_details: EventDetails):
         """Publish a single event to the given topic.

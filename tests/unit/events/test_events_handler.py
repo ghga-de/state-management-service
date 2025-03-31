@@ -65,14 +65,17 @@ def get_expected_records_to_delete(
 )
 async def test_topics_parameter_behavior(topics: list[str], exclude_internal: bool):
     """Test how clear_topics behaves based on the parameters."""
-    # Set up a mock to replace the admin client
+    # Set up a mock to replace the admin client and _get_cleanup_policy() method
     mock = AsyncMock(spec=AIOKafkaAdminClient)
     mock_topics_info = mock_describe_topics(topics)
     mock.describe_topics.return_value = mock_topics_info
     mock.list_topics.return_value = INTERNAL_TOPICS + topics
+    policy_mock = AsyncMock()
+    policy_mock.return_value = "delete"
 
-    # Create an instance of the EventsHandler and patch with the mock
+    # Create an instance of the EventsHandler and patch with the mocks
     handler = EventsHandler(config=DEFAULT_TEST_CONFIG, event_publisher=AsyncMock())
+    handler._get_cleanup_policy = policy_mock  # type: ignore [method-assign]
     handler.get_admin_client = lambda: asyncnullcontext(mock)  # type: ignore [method-assign]
 
     # Call the clear_topics method
