@@ -51,14 +51,14 @@ class EventsHandler(EventsHandlerPort):
 
     async def _get_cleanup_policy(
         self, *, admin_client: AIOKafkaAdminClient, topic: str
-    ):
-        """Get the current cleanup policy for a topic"""
+    ) -> str | None:
+        """Get the current cleanup policy for a topic or None if the topic doesn't exist"""
         config_response = await admin_client.describe_configs(
             [ConfigResource(ConfigResourceType.TOPIC, name=topic)]
         )
         config_resources = config_response[0].resources[0]
         configs = config_resources[-1]
-        policy = "compact"
+        policy = None
         for item in configs:
             if item[0] == "cleanup.policy":
                 policy = item[1]
@@ -96,16 +96,20 @@ class EventsHandler(EventsHandlerPort):
                 topics = await admin_client.list_topics()
             if exclude_internal:
                 topics = [topic for topic in topics if not topic.startswith("__")]
+
+            # Record the current cleanup policies before modifying them
             original_policies = {}
             for topic in topics:
                 policy = await self._get_cleanup_policy(
                     admin_client=admin_client, topic=topic
                 )
-                original_policies[topic] = policy
-                if policy != "delete":
+                if policy and "compact" in policy.split(","):
+                    original_policies[topic] = policy
                     await self._set_cleanup_policy(
                         admin_client=admin_client, topic=topic, policy="delete"
                     )
+
+            # Create `RecordsToDelete` object for each topic we want to clear
             topics_info = await admin_client.describe_topics(topics)
             records_to_delete = {
                 TopicPartition(
@@ -114,14 +118,15 @@ class EventsHandler(EventsHandlerPort):
                 for topic_info in topics_info
                 for partition_info in topic_info["partitions"]
             }
-            await admin_client.delete_records(records_to_delete, timeout_ms=10000)
-            for topic in topics:
-                og_policy = original_policies[topic]
-                if og_policy != "delete":
+            try:
+                # Perform the delete, ensuring the cleanup policy is always restored
+                await admin_client.delete_records(records_to_delete, timeout_ms=10000)
+            finally:
+                for topic, policy in original_policies.items():
                     await self._set_cleanup_policy(
                         admin_client=admin_client,
                         topic=topic,
-                        policy=og_policy,
+                        policy=policy,
                     )
 
     async def publish_event(self, *, event_details: EventDetails):
