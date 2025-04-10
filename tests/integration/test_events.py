@@ -14,6 +14,7 @@
 # limitations under the License.
 """Integration tests for the kafka state management."""
 
+import json
 from contextlib import suppress
 from typing import Any
 
@@ -129,3 +130,46 @@ async def test_clear_topics_happy(
             assert len(records) == num_records_remaining
             for record in records:
                 assert record.topic not in cleared_topics
+
+
+# Test event publishing
+@pytest.mark.parametrize(
+    "event_to_publish",
+    [TEST_EVENT1, TEST_EVENT2, TEST_EVENT3],
+    ids=["Event1", "Event2", "Event3"],
+)
+async def test_publish_event_happy(
+    kafka: KafkaFixture,
+    event_to_publish: dict[str, Any],
+):
+    """Test that events can be published."""
+    config = get_config(sources=[kafka.config])
+
+    # Call the endpoint to publish the event
+    async with (
+        prepare_rest_app(config=config) as app,
+        AsyncTestClient(app=app) as client,
+    ):
+        response = await client.post(
+            "/events/",
+            json=event_to_publish,
+            headers={"Authorization": VALID_BEARER_TOKEN},
+        )
+        assert response.status_code == 204
+
+    # Verify that the events were published
+    consumer = AIOKafkaConsumer(
+        event_to_publish["topic"],
+        bootstrap_servers=kafka.kafka_servers[0],
+        group_id="sms",
+        auto_offset_reset="earliest",
+        enable_auto_commit=True,
+        consumer_timeout_ms=2000,
+    )
+    await consumer.start()
+    prefetched = await consumer.getmany(timeout_ms=500)
+    with suppress(StopIteration):
+        records = next(iter(prefetched.values()))
+        assert len(records) == 1
+        assert records[0].value
+        assert json.loads(records[0].value) == event_to_publish["payload"]

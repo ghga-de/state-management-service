@@ -16,6 +16,7 @@
 """Defines the API of a class that interfaces between inbound requests and kafka."""
 
 from abc import ABC, abstractmethod
+from collections.abc import Mapping
 
 
 class EventsHandlerPort(ABC):
@@ -28,4 +29,16 @@ class EventsHandlerPort(ABC):
         If no topics are specified, all topics will be cleared, except internal topics
         unless otherwise specified.
         """
+        ...
+
+    @abstractmethod
+    async def publish_event(
+        self,
+        *,
+        topic: str,
+        payload: Mapping[str, str],
+        type_: bytes,
+        key: bytes,
+    ):
+        """Publish an event to the given topic."""
         ...

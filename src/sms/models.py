@@ -32,3 +32,14 @@ class UpsertionDetails(BaseModel):
     documents: DocumentType | list[DocumentType] = Field(
         default=..., description="The document(s) to upsert."
     )
+
+
+class EventDetails(BaseModel):
+    """Details for publishing events."""
+
+    payload: Mapping[str, str] = Field(
+        default=..., description="The value of the event."
+    )
+    topic: str = Field(default=..., description="The topic to publish the event to.")
+    type_: bytes = Field(default=..., description="The type of the event.")
+    key: bytes = Field(default=..., description="The key of the event.")

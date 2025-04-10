@@ -25,6 +25,7 @@ from sms.adapters.inbound.fastapi_.http_authorization import (
     TokenAuthContext,
     require_token,
 )
+from sms.models import EventDetails
 
 KAFKA_TOPIC_PATTERN = r"^[a-zA-Z0-9._-]+$"
 
@@ -80,6 +81,44 @@ async def clear_topics(
     try:
         await events_handler.clear_topics(
             topics=topics, exclude_internal=exclude_internal
+        )
+    except Exception as err:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(err)
+        ) from err
+
+
+@kafka_router.post(
+    "/",
+    operation_id="publish_event",
+    summary="Publish the event provided in the request body to the given topic.",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def publish_event(
+    events_handler: dummies.EventsHandlerPortDummy,
+    events_details: EventDetails,
+    _token: Annotated[TokenAuthContext, require_token],
+):
+    """Publish the event provided in the request body to the given topic.
+
+    Args:
+    - `events_handler`: The events handler to use.
+
+    Raises:
+    - `HTTPException`: If an error occurs.
+    """
+    if not is_topic_valid(events_details.topic):
+        msg = f"Invalid topic: {events_details.topic}"
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=msg
+        )
+
+    try:
+        await events_handler.publish_event(
+            topic=events_details.topic,
+            payload=events_details.payload,
+            type_=events_details.type_,
+            key=events_details.key,
         )
     except Exception as err:
         raise HTTPException(

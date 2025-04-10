@@ -14,11 +14,13 @@
 # limitations under the License.
 """Contains implementation of the EventsHandler class."""
 
-from collections.abc import AsyncGenerator
+import json
+from collections.abc import AsyncGenerator, Mapping
 from contextlib import asynccontextmanager
 
-from aiokafka import TopicPartition
+from aiokafka import AIOKafkaProducer, TopicPartition
 from aiokafka.admin import AIOKafkaAdminClient, RecordsToDelete
+from hexkit.correlation import new_correlation_id
 from hexkit.providers.akafka.provider.utils import generate_ssl_context
 
 from sms.config import Config
@@ -45,6 +47,20 @@ class EventsHandler(EventsHandlerPort):
         finally:
             await admin_client.close()
 
+    @asynccontextmanager
+    async def get_producer(self) -> AsyncGenerator[AIOKafkaProducer, None]:
+        """Construct and return an instance of AIOKafkaProducer that is closed after use."""
+        producer = AIOKafkaProducer(
+            bootstrap_servers=self._config.kafka_servers,
+            security_protocol=self._config.kafka_security_protocol,
+            ssl_context=generate_ssl_context(self._config),
+        )
+        await producer.start()
+        try:
+            yield producer
+        finally:
+            await producer.stop()
+
     async def clear_topics(self, *, topics: list[str], exclude_internal: bool = True):
         """Clear messages from given topic(s).
 
@@ -65,3 +81,29 @@ class EventsHandler(EventsHandlerPort):
                 for partition_info in topic_info["partitions"]
             }
             await admin_client.delete_records(records_to_delete, timeout_ms=10000)
+
+    async def publish_event(
+        self,
+        *,
+        topic: str,
+        payload: Mapping[str, str],
+        type_: bytes,
+        key: bytes,
+    ):
+        """Publish a single event to the given topic.
+
+        Assign a correlation ID to the event and set it in the headers.
+        """
+        async with self.get_producer() as producer:
+            correlation_id = new_correlation_id()
+            headers = {"correlation_id": correlation_id.encode()}
+            if type_:
+                headers["type"] = type_
+
+            value = json.dumps(payload).encode("utf-8")
+            await producer.send_and_wait(
+                topic,
+                value=value,
+                key=key,
+                headers=[(k, v) for k, v in headers.items()],
+            )
