@@ -93,6 +93,8 @@ async def test_get_policy(kafka: KafkaFixture):
             # Verify that the returned value is correct
             assert assigned_policy == policy
 
+        await admin_client.delete_topics([item[0] for item in topic_policies])
+
 
 async def test_set_policy(kafka: KafkaFixture):
     """Verify that `_set_cleanup_policy()` updates the current value"""
