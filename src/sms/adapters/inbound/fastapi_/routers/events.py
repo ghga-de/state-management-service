@@ -96,7 +96,7 @@ async def clear_topics(
 )
 async def publish_event(
     events_handler: dummies.EventsHandlerPortDummy,
-    events_details: EventDetails,
+    event_details: EventDetails,
     _token: Annotated[TokenAuthContext, require_token],
 ):
     """Publish the event provided in the request body to the given topic.
@@ -107,19 +107,14 @@ async def publish_event(
     Raises:
     - `HTTPException`: If an error occurs.
     """
-    if not is_topic_valid(events_details.topic):
-        msg = f"Invalid topic: {events_details.topic}"
+    if not is_topic_valid(event_details.topic):
+        msg = f"Invalid topic: {event_details.topic}"
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=msg
         )
 
     try:
-        await events_handler.publish_event(
-            topic=events_details.topic,
-            payload=events_details.payload,
-            type_=events_details.type_,
-            key=events_details.key,
-        )
+        await events_handler.publish_event(event_details=event_details)
     except Exception as err:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(err)

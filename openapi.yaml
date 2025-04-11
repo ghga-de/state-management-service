@@ -3,9 +3,16 @@ components:
     EventDetails:
       description: Details for publishing events.
       properties:
+        headers:
+          anyOf:
+          - additionalProperties:
+              type: string
+            type: object
+          - type: 'null'
+          description: The headers for the event.
+          title: Headers
         key:
           description: The key of the event.
-          format: binary
           title: Key
           type: string
         payload:
@@ -20,7 +27,6 @@ components:
           type: string
         type_:
           description: The type of the event.
-          format: binary
           title: Type
           type: string
       required:
