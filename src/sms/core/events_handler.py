@@ -14,24 +14,25 @@
 # limitations under the License.
 """Contains implementation of the EventsHandler class."""
 
-import json
-from collections.abc import AsyncGenerator, Mapping
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
-from aiokafka import AIOKafkaProducer, TopicPartition
+from aiokafka import TopicPartition
 from aiokafka.admin import AIOKafkaAdminClient, RecordsToDelete
-from hexkit.correlation import new_correlation_id
+from hexkit.protocols.eventpub import EventPublisherProtocol
 from hexkit.providers.akafka.provider.utils import generate_ssl_context
 
 from sms.config import Config
+from sms.models import EventDetails
 from sms.ports.inbound.events_handler import EventsHandlerPort
 
 
 class EventsHandler(EventsHandlerPort):
     """A class to manage the state of kafka events."""
 
-    def __init__(self, *, config: Config):
+    def __init__(self, *, config: Config, event_publisher: EventPublisherProtocol):
         self._config = config
+        self._event_publisher = event_publisher
 
     @asynccontextmanager
     async def get_admin_client(self) -> AsyncGenerator[AIOKafkaAdminClient, None]:
@@ -46,20 +47,6 @@ class EventsHandler(EventsHandlerPort):
             yield admin_client
         finally:
             await admin_client.close()
-
-    @asynccontextmanager
-    async def get_producer(self) -> AsyncGenerator[AIOKafkaProducer, None]:
-        """Construct and return an instance of AIOKafkaProducer that is closed after use."""
-        producer = AIOKafkaProducer(
-            bootstrap_servers=self._config.kafka_servers,
-            security_protocol=self._config.kafka_security_protocol,
-            ssl_context=generate_ssl_context(self._config),
-        )
-        await producer.start()
-        try:
-            yield producer
-        finally:
-            await producer.stop()
 
     async def clear_topics(self, *, topics: list[str], exclude_internal: bool = True):
         """Clear messages from given topic(s).
@@ -82,28 +69,18 @@ class EventsHandler(EventsHandlerPort):
             }
             await admin_client.delete_records(records_to_delete, timeout_ms=10000)
 
-    async def publish_event(
-        self,
-        *,
-        topic: str,
-        payload: Mapping[str, str],
-        type_: bytes,
-        key: bytes,
-    ):
+    async def publish_event(self, *, event_details: EventDetails):
         """Publish a single event to the given topic.
 
-        Assign a correlation ID to the event and set it in the headers.
+        Raises a `PublishError` if there's an problem with the publishing operation.
         """
-        async with self.get_producer() as producer:
-            correlation_id = new_correlation_id()
-            headers = {"correlation_id": correlation_id.encode()}
-            if type_:
-                headers["type"] = type_
-
-            value = json.dumps(payload).encode("utf-8")
-            await producer.send_and_wait(
-                topic,
-                value=value,
-                key=key,
-                headers=[(k, v) for k, v in headers.items()],
+        try:
+            await self._event_publisher.publish(
+                payload=event_details.payload,
+                type_=event_details.type_,
+                topic=event_details.topic,
+                key=event_details.key,
+                headers=event_details.headers,
             )
+        except Exception as exc:
+            raise self.PublishError(event_details=event_details) from exc

@@ -41,5 +41,8 @@ class EventDetails(BaseModel):
         default=..., description="The value of the event."
     )
     topic: str = Field(default=..., description="The topic to publish the event to.")
-    type_: bytes = Field(default=..., description="The type of the event.")
-    key: bytes = Field(default=..., description="The key of the event.")
+    type_: str = Field(default=..., description="The type of the event.")
+    key: str = Field(default=..., description="The key of the event.")
+    headers: Mapping[str, str] | None = Field(
+        None, description="The headers for the event."
+    )

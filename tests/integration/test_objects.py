@@ -14,6 +14,8 @@
 # limitations under the License.
 """Integration tests for the /objects endpoints."""
 
+from unittest.mock import AsyncMock
+
 import pytest
 from hexkit.providers.s3 import S3Config
 from hexkit.providers.s3.testutils import FederatedS3Fixture
@@ -84,7 +86,9 @@ async def test_does_object_exist(
     config = patch_config_for_alias(alias=DEFAULT_ALIAS, s3_config=s3_config)
     await federated_s3.populate_dummy_items(DEFAULT_ALIAS, buckets)
 
-    async with get_rest_client(config=config) as client:
+    async with get_rest_client(
+        config=config, events_handler_override=AsyncMock()
+    ) as client:
         response = await client.get(
             f"/objects/{DEFAULT_ALIAS}/{bucket_id}/{object_id}",
             headers={"Authorization": VALID_BEARER_TOKEN},
@@ -124,7 +128,9 @@ async def test_list_objects(federated_s3: FederatedS3Fixture):
 
     await federated_s3.populate_dummy_items(DEFAULT_ALIAS, buckets)
 
-    async with get_rest_client(config=config) as client:
+    async with get_rest_client(
+        config=config, events_handler_override=AsyncMock()
+    ) as client:
         for bucket_id, expected_status in statuses:
             response = await client.get(
                 f"/objects/{DEFAULT_ALIAS}/{bucket_id}",
@@ -159,7 +165,9 @@ async def test_delete_objects(federated_s3: FederatedS3Fixture):
 
     await federated_s3.populate_dummy_items(DEFAULT_ALIAS, buckets)
 
-    async with get_rest_client(config=config) as client:
+    async with get_rest_client(
+        config=config, events_handler_override=AsyncMock()
+    ) as client:
         # Iterate through emptying the buckets above and check the status code
         for bucket_id, expected_status in statuses:
             response = await client.delete(

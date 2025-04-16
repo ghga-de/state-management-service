@@ -16,11 +16,22 @@
 """Defines the API of a class that interfaces between inbound requests and kafka."""
 
 from abc import ABC, abstractmethod
-from collections.abc import Mapping
+
+from sms.models import EventDetails
 
 
 class EventsHandlerPort(ABC):
     """A class to manage the state of kafka events."""
+
+    class PublishError(RuntimeError):
+        """Raised when there's an error during the event publish operation."""
+
+        def __init__(self, *, event_details: EventDetails):
+            msg = (
+                "There was an error trying to publish the"
+                + f" following event: {event_details}"
+            )
+            super().__init__(msg)
 
     @abstractmethod
     async def clear_topics(self, *, topics: list[str], exclude_internal: bool = True):
@@ -32,13 +43,9 @@ class EventsHandlerPort(ABC):
         ...
 
     @abstractmethod
-    async def publish_event(
-        self,
-        *,
-        topic: str,
-        payload: Mapping[str, str],
-        type_: bytes,
-        key: bytes,
-    ):
-        """Publish an event to the given topic."""
+    async def publish_event(self, *, event_details: EventDetails):
+        """Publish a single event to the given topic.
+
+        Raises a `PublishError` if there's an problem with the publishing operation.
+        """
         ...

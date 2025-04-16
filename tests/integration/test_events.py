@@ -14,7 +14,6 @@
 # limitations under the License.
 """Integration tests for the kafka state management."""
 
-import json
 from contextlib import suppress
 from typing import Any
 
@@ -149,6 +148,7 @@ async def test_publish_event_happy(
     async with (
         prepare_rest_app(config=config) as app,
         AsyncTestClient(app=app) as client,
+        kafka.record_events(in_topic=event_to_publish["topic"]) as recorder,
     ):
         response = await client.post(
             "/events/",
@@ -156,20 +156,9 @@ async def test_publish_event_happy(
             headers={"Authorization": VALID_BEARER_TOKEN},
         )
         assert response.status_code == 204
-
-    # Verify that the events were published
-    consumer = AIOKafkaConsumer(
-        event_to_publish["topic"],
-        bootstrap_servers=kafka.kafka_servers[0],
-        group_id="sms",
-        auto_offset_reset="earliest",
-        enable_auto_commit=True,
-        consumer_timeout_ms=2000,
-    )
-    await consumer.start()
-    prefetched = await consumer.getmany(timeout_ms=500)
-    with suppress(StopIteration):
-        records = next(iter(prefetched.values()))
-        assert len(records) == 1
-        assert records[0].value
-        assert json.loads(records[0].value) == event_to_publish["payload"]
+    assert recorder.recorded_events
+    assert len(recorder.recorded_events) == 1
+    event = recorder.recorded_events[0]
+    assert event.payload == event_to_publish["payload"]
+    assert event.type_ == event_to_publish["type_"]
+    assert event.key == event_to_publish["key"]
