@@ -58,7 +58,7 @@ TEST_TOPICS = [TEST_TOPIC1, TEST_TOPIC2]
 async def test_get_policy(kafka: KafkaFixture):
     """Verify that `_get_cleanup_policy()` returns the current value"""
     config = get_config(sources=[kafka.config])
-    events_handler = EventsHandler(config=config)
+    events_handler = EventsHandler(config=config, event_publisher=AsyncMock())
     async with events_handler.get_admin_client() as admin_client:
         # Create a Kafka topic with the cleanup policy set to 'delete'
         topic_policies = [
@@ -91,7 +91,7 @@ async def test_get_policy(kafka: KafkaFixture):
 async def test_set_policy(kafka: KafkaFixture):
     """Verify that `_set_cleanup_policy()` updates the current value"""
     config = get_config(sources=[kafka.config])
-    events_handler = EventsHandler(config=config)
+    events_handler = EventsHandler(config=config, event_publisher=AsyncMock())
     async with events_handler.get_admin_client() as admin_client:
         # Create a Kafka topic with the cleanup policy set to 'compact'
         if not await events_handler._get_cleanup_policy(topic=TEST_TOPIC1):
@@ -155,7 +155,7 @@ async def test_clear_topics_happy(
     config = get_config(sources=[kafka.config])
 
     # Make sure to set policy to "compact" for the topics
-    events_handler = EventsHandler(config=config)
+    events_handler = EventsHandler(config=config, event_publisher=AsyncMock())
     async with events_handler.get_admin_client() as admin_client:
         existing_topics = await admin_client.list_topics()
         for topic in topics_to_clear:
