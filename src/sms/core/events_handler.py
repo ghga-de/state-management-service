@@ -162,8 +162,7 @@ class EventsHandler(EventsHandlerPort):
                     # Always set compacted topics back to their original policy
                     if original_policy:
                         await self._set_cleanup_policy(
-                            topic=topic,  # type: ignore
-                            policy=original_policy,
+                            topic=topic, policy=original_policy
                         )
 
     async def publish_event(self, *, event_details: EventDetails):
