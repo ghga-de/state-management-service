@@ -22,7 +22,6 @@ from aiokafka import TopicPartition
 from aiokafka.admin import AIOKafkaAdminClient, RecordsToDelete
 from aiokafka.admin.config_resource import ConfigResource, ConfigResourceType
 from hexkit.protocols.eventpub import EventPublisherProtocol
-from hexkit.providers.akafka.provider.utils import generate_ssl_context
 
 from sms.config import Config
 from sms.models import EventDetails
