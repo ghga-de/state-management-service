@@ -144,6 +144,8 @@ class EventsHandler(EventsHandlerPort):
                 if original_policy and "compact" in original_policy.split(","):
                     await self._set_cleanup_policy(topic=topic, policy="delete")
                     await asyncio.sleep(0.2)  # brief pause to wait for policy changes
+                else:
+                    original_policy = None  # don't need to revert 'delete' topics
 
                 records_to_delete = {
                     TopicPartition(
