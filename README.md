@@ -454,6 +454,32 @@ The service requires the following configuration parameters:
   ```
 
 
+- <a id="properties/mongo_timeout"></a>**`mongo_timeout`**: Timeout in seconds for API calls to MongoDB. The timeout applies to all steps needed to complete the operation, including server selection, connection checkout, serialization, and server-side execution. When the timeout expires, PyMongo raises a timeout exception. If set to None, the operation will not time out (default MongoDB behavior). Default: `null`.
+
+  - **Any of**
+
+    - <a id="properties/mongo_timeout/anyOf/0"></a>*integer*: Exclusive minimum: `0`.
+
+    - <a id="properties/mongo_timeout/anyOf/1"></a>*null*
+
+
+  Examples:
+
+  ```json
+  300
+  ```
+
+
+  ```json
+  600
+  ```
+
+
+  ```json
+  null
+  ```
+
+
 - <a id="properties/log_level"></a>**`log_level`** *(string)*: The minimum log level to capture. Must be one of: "CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG", or "TRACE". Default: `"INFO"`.
 
 - <a id="properties/log_format"></a>**`log_format`**: If set, will replace JSON formatting with the specified string format. If not set, has no effect. In addition to the standard attributes, the following can also be specified: timestamp, service, instance, level, correlation_id, and details. Default: `null`.

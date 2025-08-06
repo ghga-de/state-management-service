@@ -29,6 +29,7 @@ log_format: null
 log_level: INFO
 log_traceback: true
 mongo_dsn: '**********'
+mongo_timeout: null
 object_storages:
   primary:
     bucket: permanent
