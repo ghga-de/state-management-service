@@ -28,7 +28,7 @@ from sms.ports.outbound.docs_dao import DocsDaoPort
 
 log = logging.getLogger(__name__)
 
-CODEC_OPTS = CodecOptions(
+CODEC_OPTS: CodecOptions = CodecOptions(
     uuid_representation=UuidRepresentation.STANDARD, tz_aware=True
 )
 
