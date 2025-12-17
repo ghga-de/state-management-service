@@ -1,6 +1,6 @@
 [project]
 name = "sms"
-version = "4.2.1"
+version = "4.2.2"
 description = "State Management Service - Provides a REST API for basic infrastructure technology state management."
 dependencies = [
     "typer >= 0.19",
