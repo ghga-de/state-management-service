@@ -1,11 +1,11 @@
 [project]
 name = "sms"
-version = "4.2.2"
+version = "4.3.0"
 description = "State Management Service - Provides a REST API for basic infrastructure technology state management."
 dependencies = [
     "typer >= 0.19",
-    "ghga-service-commons[api] >= 5.1",
-    "hexkit[mongodb,s3,akafka] >= 7.1",
+    "ghga-service-commons[api] >= 7.0",
+    "hexkit[mongodb,s3,akafka] >= 8.0",
     "hvac>=2",
 ]
 
