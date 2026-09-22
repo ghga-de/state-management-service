@@ -157,8 +157,7 @@ class SecretsHandler(SecretsHandlerPort):
                 path=vault_path,
                 mount_point=self._config.vault_secrets_mount_point,
             )
-            secret_ids = secrets["data"]["keys"]
-            return secret_ids
+            return secrets["data"]["keys"]
         except InvalidPath:
             msg = (
                 "Invalid path error when fetching secrets. The path, '%s', might"
