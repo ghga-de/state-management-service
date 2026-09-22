@@ -3,6 +3,18 @@
 
 # State Management Service
 
+> [!IMPORTANT]
+> **This repository is archived and no longer maintained.**
+>
+> Development of the state management service continues in the GHGA mono repository at
+> [ghga-de/ghga](https://github.com/ghga-de/ghga), where the service now lives under
+> [`services/state-management-service`](https://github.com/ghga-de/ghga/tree/main/services/state-management-service).
+> Please open issues and pull requests there.
+>
+> This repository is kept read-only for its history. Version 5.0.0 (May 2026) was the
+> last release made here; everything after that has been developed in the mono repository.
+> The documentation below describes the state of the code as of that version.
+
 State Management Service - Provides a REST API for basic infrastructure technology state management.
 
 ## Description
