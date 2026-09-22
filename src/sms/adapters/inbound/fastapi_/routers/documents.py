@@ -130,12 +130,11 @@ async def get_docs(
     criteria = request_json or query_param_dict
 
     try:
-        results = await docs_handler.get(
+        return await docs_handler.get(
             db_name=db_name,
             collection=collection,
             criteria=criteria,
         )
-        return results
     except PermissionError as err:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

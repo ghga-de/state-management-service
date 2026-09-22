@@ -37,4 +37,4 @@ def storage_aliases():
 
     This tells it how many S3 storages to spin up and what names to associate with them.
     """
-    return [alias for alias in DEFAULT_TEST_CONFIG.object_storages]
+    return list(DEFAULT_TEST_CONFIG.object_storages)

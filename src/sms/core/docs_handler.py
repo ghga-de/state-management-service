@@ -137,8 +137,7 @@ class DocsHandler(DocsHandlerPort):
                         extra={"key": key, "value": value},
                     )
                     raise error from err
-        resolved_parsed_criteria = resolve_extended_json(parsed_criteria)
-        return resolved_parsed_criteria
+        return resolve_extended_json(parsed_criteria)
 
     async def get(
         self, db_name: str, collection: str, criteria: Criteria

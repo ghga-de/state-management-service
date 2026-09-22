@@ -45,13 +45,13 @@ class DummyDocsHandler(DocsHandlerPort):
 
     def ensure_db_exists(self, db_name: str) -> None:
         """Check if a database exists."""
-        if not db_name in self.state:
+        if db_name not in self.state:
             raise self.NamespaceNotFoundError(db_name=db_name)
 
     def ensure_collection_exists(self, db_name: str, collection: str) -> None:
         """Check if a collection exists."""
         self.ensure_db_exists(db_name)
-        if not collection in self.state[db_name]:
+        if collection not in self.state[db_name]:
             raise self.NamespaceNotFoundError(db_name=db_name, collection=collection)
 
     async def get(self, db_name: str, collection: str, criteria: Criteria):

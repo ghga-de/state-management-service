@@ -47,14 +47,13 @@ def get_expected_records_to_delete(
             info for info in topics_info if not info["topic"].startswith("__")
         ]
 
-    records_to_delete = {
+    return {
         TopicPartition(
             topic=topic_info["topic"], partition=partition_info["partition"]
         ): RecordsToDelete(before_offset=-1)
         for topic_info in topics_info_filtered
         for partition_info in topic_info["partitions"]
     }
-    return records_to_delete
 
 
 @pytest.mark.parametrize(
@@ -106,7 +105,7 @@ async def test_topics_parameter_behavior(
             records_to_delete_dict = call[0][0]
 
             # Only one topic should have been cleared at a time
-            items = [_ for _ in records_to_delete_dict.items()]
+            items = list(records_to_delete_dict.items())
             assert len(items) == 1
 
             # Verify the supplied key was a TopicPartition, the value a RecordsToDelete
